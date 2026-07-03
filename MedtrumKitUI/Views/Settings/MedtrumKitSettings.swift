@@ -181,7 +181,7 @@ struct MedtrumKitSettings: View {
                             viewModel.stopTempBasal()
                         }) {
                             HStack {
-                                Text("Stop temp basal", comment: "Stop temp basal")
+                                Text("Stop Temporary Basal", comment: "Stop temp basal")
                                 Spacer()
                                 if viewModel.isUpdatingTempBasal {
                                     ActivityIndicator()
@@ -207,13 +207,16 @@ struct MedtrumKitSettings: View {
                         viewModel.isUpdatingPumpState || viewModel.isUpdatingTempBasal || viewModel
                             .isUpdatingSuspend || viewModel.isClearingAlert
                     )
-                    Button(action: { viewModel.toTempBasal() }) {
-                        HStack {
-                            Text("Manual Temp Basal", comment: "sync pump")
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: UIFont.systemFontSize, weight: .bold))
-                                .foregroundStyle(.secondary)
+                    
+                    if !viewModel.tempBasalManual {
+                        Button(action: { viewModel.toTempBasal() }) {
+                            HStack {
+                                Text("Set Temporary Basal", comment: "sync pump")
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: UIFont.systemFontSize, weight: .bold))
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
 

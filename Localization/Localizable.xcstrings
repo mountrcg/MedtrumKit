@@ -29777,164 +29777,164 @@
         }
       }
     },
-    "Stop temp basal" : {
+    "Stop Temporary Basal" : {
       "comment" : "Stop temp basal",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "وقف درجة الحرارة القاعدية"
+            "value" : "إيقاف الجرعة الأساسية المؤقتة"
           }
         },
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zastavení bazální teploty"
+            "value" : "Zastavit dočasnou bazální dávku"
           }
         },
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stop temp basal"
+            "value" : "Stop midlertidig basal"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Temp. basal anhalten"
+            "value" : "Temporäre Basalrate anhalten"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stop temp basal"
+            "value" : "Stop Temporary Basal"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Parada temp basal"
+            "value" : "Detener la tasa basal temporal"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pysäytä temp basal"
+            "value" : "Lopeta väliaikainen perusannos"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Arrêt de la température basale"
+            "value" : "Arrêter le débit basal temporaire"
           }
         },
         "he" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "עצור את הטמפרטורה הבסיסית"
+            "value" : "עצור את הבסיס הזמני"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stop temp basal"
+            "value" : "Ideiglenes bazális adag leállítása"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Interruzione della temperatura basale"
+            "value" : "Interrompi il basale temporaneo"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "基礎体温停止"
+            "value" : "一時的な基礎インスリンを停止"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "임시 기본값 중지"
+            "value" : "임시 기저 인슐린 중지"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stopp temp basal"
+            "value" : "Stopp midlertidig basal"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stop temp basaal"
+            "value" : "Tijdelijke basale afgifte stoppen"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zatrzymanie temperatury podstawowej"
+            "value" : "Zatrzymaj tymczasową dawkę bazową"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Parar a temperatura basal"
+            "value" : "Interromper a taxa basal temporária"
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Opriți bazala temporară"
+            "value" : "Oprire bazal temporar"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Прекратите базальную температуру"
+            "value" : "Остановить временную базовую дозу"
           }
         },
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zastavenie bazálnej teploty"
+            "value" : "Zastaviť dočasnú bazálnu dávku"
           }
         },
         "sl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ustavite temp bazalno"
+            "value" : "Zaustavi začasno bazalno dozo"
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stoppa temp basal"
+            "value" : "Avbryt tillfällig basal"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bazal sıcaklığı durdur"
+            "value" : "Geçici Bazal Veri Durdur"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Зупинка базальної температури"
+            "value" : "Зупинити тимчасовий базовий рівень"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ngừng nhiệt độ cơ bản"
+            "value" : "Dừng cơ bản tạm thời"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "停止基础温度"
+            "value" : "停止临时基础率"
           }
         }
       }
