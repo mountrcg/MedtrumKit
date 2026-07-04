@@ -7,7 +7,7 @@ class ManualTempBasalViewModel: ObservableObject {
     @Published var error: String? = nil
 
     public let allowedRates: [Double] = MedtrumPumpManager.onboardingSupportedBasalRates.filter { $0 > 0 && $0 < 10 }
-    public let allowedDurations: [Double] = (1 ... 24).map { Double($0) * TimeInterval.minutes(30) }
+    public let allowedDurations: [Double] = (1 ... 3).map { Double($0) * TimeInterval.minutes(15) } + (2 ... 24).map { Double($0) * TimeInterval.minutes(30) }
 
     func rateFormatter(for basal: Double) -> String {
         let stepped = (basal / 0.05).rounded() * 0.05

@@ -181,7 +181,7 @@ struct MedtrumKitSettings: View {
                             viewModel.stopTempBasal()
                         }) {
                             HStack {
-                                Text("Stop Temporary Basal", comment: "Stop temp basal")
+                                Text("Stop Temp Basal", comment: "Stop temp basal")
                                 Spacer()
                                 if viewModel.isUpdatingTempBasal {
                                     ActivityIndicator()
@@ -196,7 +196,7 @@ struct MedtrumKitSettings: View {
 
                     Button(action: { viewModel.syncData() }) {
                         HStack {
-                            Text("Sync patch data", comment: "sync pump")
+                            Text("Sync Patch Data", comment: "sync pump")
                             Spacer()
                             if viewModel.isUpdatingPumpState {
                                 ActivityIndicator()
@@ -211,7 +211,7 @@ struct MedtrumKitSettings: View {
                     if !viewModel.tempBasalManual {
                         Button(action: { viewModel.toTempBasal() }) {
                             HStack {
-                                Text("Set Temporary Basal", comment: "sync pump")
+                                Text("Manual Temp Basal", comment: "sync pump")
                                 Spacer()
                                 Image(systemName: "chevron.right")
                                     .font(.system(size: UIFont.systemFontSize, weight: .bold))
@@ -523,23 +523,8 @@ struct MedtrumKitSettings: View {
         VStack(alignment: .leading, spacing: 5) {
             Text(deliverySectionTitle)
                 .foregroundColor(Color(UIColor.secondaryLabel))
-
-            switch viewModel.basalType {
-            case .basal,
-                 .bolus,
-                 .resume,
-                 .tempBasal:
-                HStack(alignment: .center) {
-                    HStack(alignment: .lastTextBaseline, spacing: 3) {
-                        Text(viewModel.basalRateFormatter.string(from: viewModel.basalRate as NSNumber) ?? "")
-                            .font(.system(size: 28))
-                            .fontWeight(.heavy)
-                            .fixedSize()
-                        Text("U/hr", comment: "Units for showing temp basal rate")
-                            .foregroundColor(.secondary)
-                    }
-                }
-            case .suspend:
+            
+            if viewModel.basalType == .suspend {
                 HStack(alignment: .center) {
                     Image(systemName: "pause.circle.fill")
                         .font(.system(size: 34))
@@ -551,6 +536,24 @@ struct MedtrumKitSettings: View {
                     )
                     .fontWeight(.bold)
                     .fixedSize()
+                }
+            } else {
+                HStack(alignment: .center, spacing: 10) {
+                    HStack(alignment: .lastTextBaseline, spacing: 3) {
+                        Text(viewModel.basalRate)
+                            .font(.system(size: 28))
+                            .fontWeight(.heavy)
+                            .fixedSize()
+                        Text("U/hr", comment: "Units for showing temp basal rate")
+                            .foregroundColor(.secondary)
+                        
+                        if let tempRemaining = viewModel.tempBasalRemaining {
+                            Text(
+                                String(format: String(localized: "(%lld min)", comment: "Unit for minute"), tempRemaining))
+                            .foregroundColor(.secondary)
+                            
+                        }
+                    }
                 }
             }
         }

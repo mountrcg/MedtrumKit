@@ -161,6 +161,168 @@
         }
       }
     },
+    "(%lld min)" : {
+      "comment" : "Unit for minute",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld دقيقة)"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld min)"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld min)"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld Min.)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld min)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld min)"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld min)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld min)"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld דקות)"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld perc)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld min)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld 分)"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld 분)"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld min)"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld min)"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld min)"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld min)"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld min)"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld мин)"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld min)"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld min)"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld min)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld dakika)"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld хв)"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld phút)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%lld 分钟)"
+          }
+        }
+      }
+    },
     "%@ for %@" : {
       "localizations" : {
         "ar" : {
@@ -29777,7 +29939,7 @@
         }
       }
     },
-    "Stop Temporary Basal" : {
+    "Stop Temp Basal" : {
       "comment" : "Stop temp basal",
       "extractionState" : "manual",
       "localizations" : {
@@ -29796,31 +29958,31 @@
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stop midlertidig basal"
+            "value" : "Stop temp-basal"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Temporäre Basalrate anhalten"
+            "value" : "Temporäres Basal anhalten"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stop Temporary Basal"
+            "value" : "Stop Temp Basal"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Detener la tasa basal temporal"
+            "value" : "Detener la dosis basal temporal"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lopeta väliaikainen perusannos"
+            "value" : "Pysäytä väliaikainen perusannos"
           }
         },
         "fr" : {
@@ -29832,7 +29994,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "עצור את הבסיס הזמני"
+            "value" : "עצור את טמפ בזל"
           }
         },
         "hu" : {
@@ -29850,13 +30012,13 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "一時的な基礎インスリンを停止"
+            "value" : "一時的な基礎インスリンを停止する"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "임시 기저 인슐린 중지"
+            "value" : "임시 기저율 중지"
           }
         },
         "nb" : {
@@ -29868,13 +30030,13 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tijdelijke basale afgifte stoppen"
+            "value" : "Basale temp. stoppen"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zatrzymaj tymczasową dawkę bazową"
+            "value" : "Zatrzymaj tymczasową dawkę podstawową"
           }
         },
         "pt-BR" : {
@@ -29910,31 +30072,31 @@
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Avbryt tillfällig basal"
+            "value" : "Stoppa tillfällig basal"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Geçici Bazal Veri Durdur"
+            "value" : "Geçici Bazal Akışı Durdur"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Зупинити тимчасовий базовий рівень"
+            "value" : "Припинити тимчасовий базовий рівень"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dừng cơ bản tạm thời"
+            "value" : "Dừng nhiệt độ cơ bản"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "停止临时基础率"
+            "value" : "停止临时基础胰岛素"
           }
         }
       }
@@ -31397,7 +31559,7 @@
         }
       }
     },
-    "Sync patch data" : {
+    "Sync Patch Data" : {
       "comment" : "sync pump",
       "extractionState" : "manual",
       "localizations" : {
@@ -31410,43 +31572,43 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sync patch data"
+            "value" : "Synchronizovat data záplaty"
           }
         },
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Synkroniser patch data"
+            "value" : "Synkroniser patch-data"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Patchdaten synchronisieren"
+            "value" : "Synchronisieren von Patch-Daten"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sync patch data"
+            "value" : "Sync Patch Data"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sincronizar datos"
+            "value" : "Sincronizar datos de parches"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Synkronoi korjaustiedot"
+            "value" : "Synkronoi korjauspäivitystiedot"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Synchroniser les données de correctifs"
+            "value" : "Synchroniser les données de patch"
           }
         },
         "he" : {
@@ -31458,13 +31620,13 @@
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Szinkronizálás patch adatok"
+            "value" : "Szinkronizálja a javítás adatait"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sincronizza dati patch"
+            "value" : "Sincronizza i dati delle patch"
           }
         },
         "ja" : {
@@ -31482,43 +31644,43 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Synkroniser patchdata"
+            "value" : "Synkroniser patch-data"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Synchroniseer patch gegevens"
+            "value" : "Synchronisatie data"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Synchronizuj dane łatwy"
+            "value" : "Synchronizacja danych poprawek"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sincronizar dados corretos"
+            "value" : "Sincronizar dados de patch"
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sincronizare date plasture"
+            "value" : "Sincronizare date patch"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Синхронизировать данные патча"
+            "value" : "Синхронизация данных патчей"
           }
         },
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Synchronizovať dáta z náplasti"
+            "value" : "Synchronizácia údajov o záplatách"
           }
         },
         "sl" : {
@@ -31536,19 +31698,19 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Yama verilerini senkronize et"
+            "value" : "Senkronizasyon Yama Verileri"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Синхронізація даних патчу"
+            "value" : "Синхронізувати дані патчів"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sync patch data"
+            "value" : "Đồng bộ hóa dữ liệu bản vá"
           }
         },
         "zh-Hans" : {
