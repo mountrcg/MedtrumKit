@@ -160,7 +160,7 @@ class MedtrumKitSettingsViewModel: PatchLifetimeFormatting, ObservableObject, Pu
         }
 
         return String(
-            format: String(localized: "(%lld min)", comment: ""),
+            format: String(localized: "(%lld min)", comment: "temp basal remaining minutes"),
             minutes
         )
     }

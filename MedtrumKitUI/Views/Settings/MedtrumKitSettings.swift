@@ -548,10 +548,8 @@ struct MedtrumKitSettings: View {
                             .foregroundColor(.secondary)
 
                         if let tempRemaining = viewModel.tempBasalRemaining {
-                            Text(
-                                String(format: String(localized: "(%lld min)", comment: "Unit for minute"), tempRemaining)
-                            )
-                            .foregroundColor(.secondary)
+                            Text(tempRemaining)
+                                .foregroundColor(.secondary)
                         }
                     }
                 }
