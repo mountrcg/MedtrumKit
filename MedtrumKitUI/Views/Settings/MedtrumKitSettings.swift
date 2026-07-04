@@ -207,7 +207,7 @@ struct MedtrumKitSettings: View {
                         viewModel.isUpdatingPumpState || viewModel.isUpdatingTempBasal || viewModel
                             .isUpdatingSuspend || viewModel.isClearingAlert
                     )
-                    
+
                     if !viewModel.tempBasalManual {
                         Button(action: { viewModel.toTempBasal() }) {
                             HStack {
@@ -523,7 +523,7 @@ struct MedtrumKitSettings: View {
         VStack(alignment: .leading, spacing: 5) {
             Text(deliverySectionTitle)
                 .foregroundColor(Color(UIColor.secondaryLabel))
-            
+
             if viewModel.basalType == .suspend {
                 HStack(alignment: .center) {
                     Image(systemName: "pause.circle.fill")
@@ -546,12 +546,12 @@ struct MedtrumKitSettings: View {
                             .fixedSize()
                         Text("U/hr", comment: "Units for showing temp basal rate")
                             .foregroundColor(.secondary)
-                        
+
                         if let tempRemaining = viewModel.tempBasalRemaining {
                             Text(
-                                String(format: String(localized: "(%lld min)", comment: "Unit for minute"), tempRemaining))
+                                String(format: String(localized: "(%lld min)", comment: "Unit for minute"), tempRemaining)
+                            )
                             .foregroundColor(.secondary)
-                            
                         }
                     }
                 }
