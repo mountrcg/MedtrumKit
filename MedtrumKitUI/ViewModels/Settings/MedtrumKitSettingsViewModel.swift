@@ -148,8 +148,8 @@ class MedtrumKitSettingsViewModel: PatchLifetimeFormatting, ObservableObject, Pu
         }
 
         let remaining = pumpManager.state.basalDose.estimatedEndDate.timeIntervalSinceNow
-        let hours = Int(remaining.hours.rounded())
-        let minutes = Int(remaining.minutes.rounded())
+        let hours = Int(floor(remaining.hours))
+        let minutes = Int(floor(remaining.minutes))
 
         if hours > 0 {
             return String(
