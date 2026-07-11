@@ -4,6 +4,7 @@ class ManualTempBasalViewModel: ObservableObject {
     @Published var selectedRate = 0.05
     @Published var selectedDuration = TimeInterval.minutes(30)
     @Published var enacting: Bool = false
+    @Published var enactingBolus: Bool = false
     @Published var error: String? = nil
 
     public let allowedRates: [Double] = MedtrumPumpManager.onboardingSupportedBasalRates.filter { $0 > 0 && $0 < 10 }
@@ -18,7 +19,18 @@ class ManualTempBasalViewModel: ObservableObject {
         let totalSeconds = Int(duration)
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
-        return "\(hours)h \(minutes)min"
+
+        if hours > 0 {
+            return String(
+                format: String(localized: "%lld hr %lld min", comment: "temp basal remaining hours+minutes"),
+                hours, minutes
+            )
+        }
+
+        return String(
+            format: String(localized: "%lld min", comment: "temp basal remaining minutes"),
+            minutes
+        )
     }
 
     private let pumpManager: MedtrumPumpManager?
@@ -29,7 +41,14 @@ class ManualTempBasalViewModel: ObservableObject {
 
         if let pumpManager {
             selectedRate = pumpManager.state.currentBaseBasalRate
+            enactingBolus = pumpManager.state.bolusDose != nil
+            
+            pumpManager.addStatusObserver(self, queue: DispatchQueue.main)
         }
+    }
+    
+    deinit {
+        pumpManager?.removeStatusObserver(self)
     }
 
     func enact() {
@@ -38,20 +57,31 @@ class ManualTempBasalViewModel: ObservableObject {
         }
 
         enacting = true
-        pumpManager.enactTempBasal(
-            unitsPerHour: selectedRate,
-            duration: selectedDuration,
-            automatic: false
-        ) { error in
-            DispatchQueue.main.async {
-                self.enacting = false
-
-                if let error {
-                    self.error = error.localizedDescription
-                } else {
-                    self.goBack()
+        pumpManager.syncPumpData { _ in
+            pumpManager.enactTempBasal(
+                unitsPerHour: self.selectedRate,
+                duration: self.selectedDuration,
+                automatic: false
+            ) { error in
+                DispatchQueue.main.async {
+                    self.enacting = false
+                    
+                    if let error {
+                        self.error = error.localizedDescription
+                    } else {
+                        self.goBack()
+                    }
                 }
             }
+        }
+    }
+}
+
+extension ManualTempBasalViewModel : PumpManagerStatusObserver {
+    func pumpManager(_ pumpManager: any LoopKit.PumpManager, didUpdate status: LoopKit.PumpManagerStatus, oldStatus: LoopKit.PumpManagerStatus) {
+        
+        DispatchQueue.main.async {
+            self.enactingBolus = self.pumpManager?.state.bolusDose != nil
         }
     }
 }

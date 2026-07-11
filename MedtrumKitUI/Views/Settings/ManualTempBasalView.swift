@@ -28,12 +28,14 @@ struct ManualTempBasalView: View {
                             }
                         } label: { EmptyView() }
                             .pickerStyle(.wheel)
+                            .disabled(viewModel.enacting)
                         Picker(selection: $viewModel.selectedDuration) {
                             ForEach(viewModel.allowedDurations, id: \.self) { item in
                                 Text(viewModel.durationFormatter(for: item))
                             }
                         } label: { EmptyView() }
                             .pickerStyle(.wheel)
+                            .disabled(viewModel.enacting)
                     }
                     .frame(maxHeight: 162.0)
                 } footer: {
@@ -56,10 +58,19 @@ struct ManualTempBasalView: View {
                     .foregroundStyle(.red)
             }
             Button(action: viewModel.enact) {
-                Text("Set Temporary Basal", comment: "Button text for setting manual temporary basal rate")
+                HStack(alignment: .center, spacing: 10) {
+                    if viewModel.enactingBolus {
+                        ActivityIndicator()
+                        Text("Bolus in progress...", comment: "Button text for setting manual temporary basal rate")
+                    } else if viewModel.enacting {
+                        ActivityIndicator()
+                    } else {
+                        Text("Set Manual Temp Basal", comment: "Button text for setting manual temporary basal rate")
+                    }
+                }
             }
             .buttonStyle(ActionButtonStyle(.primary))
-            .disabled(viewModel.enacting)
+            .disabled(viewModel.enacting || viewModel.enactingBolus)
             .padding()
         }
     }

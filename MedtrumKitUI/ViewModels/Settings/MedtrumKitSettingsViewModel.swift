@@ -153,7 +153,7 @@ class MedtrumKitSettingsViewModel: PatchLifetimeFormatting, ObservableObject, Pu
 
         if hours > 0 {
             return String(
-                format: String(localized: "(%lld h %lld min)", comment: "temp basal remaining hours+minutes"),
+                format: String(localized: "(%lld hr %lld min)", comment: "temp basal remaining hours+minutes"),
                 hours,
                 minutes - hours * 60
             )

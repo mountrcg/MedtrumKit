@@ -161,7 +161,7 @@
         }
       }
     },
-    "(%lld h %lld min)" : {
+    "(%lld hr %lld min)" : {
       "comment" : "temp basal remaining hours+minutes",
       "extractionState" : "manual",
       "localizations" : {
@@ -174,7 +174,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "(%lld h %lld min)"
+            "value" : "(%lld hod %lld min)"
           }
         },
         "da" : {
@@ -192,7 +192,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "(%lld h %lld min)"
+            "value" : "(%lld hr %lld min)"
           }
         },
         "es" : {
@@ -216,7 +216,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "(%lld שעה %lld דקות)"
+            "value" : "(%lld שעות %lld דקות)"
           }
         },
         "hu" : {
@@ -282,7 +282,7 @@
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "(%lld hodín %lld minút)"
+            "value" : "(%lld hod. %lld min.)"
           }
         },
         "sl" : {
@@ -312,7 +312,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "(%lld h %lld phút)"
+            "value" : "(%lld giờ %lld phút)"
           }
         },
         "zh-Hans" : {
@@ -1125,6 +1125,330 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@U"
+          }
+        }
+      }
+    },
+    "%lld hr %lld min" : {
+      "comment" : "temp basal remaining hours+minutes",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ساعة %lld دقيقة"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld hod %lld min"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld time %lld minut"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Std. %lld Min."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld hr %lld min"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld h %lld min"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld tuntia %lld minuuttia"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld h %lld min"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld שעה %lld דקות"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld óra %lld perc"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ore %lld minuti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 時間 %lld 分"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 시간 %lld 분"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld time %lld minutt"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld uur %lld minuten"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld godz. %lld min."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld hora %lld minuto"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ore %lld minute"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld час %lld минут"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld hodín %lld minút"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ur %lld min"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld tim %lld min"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld saat %lld dakika"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld год %lld хв"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld giờ %lld phút"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 小时 %lld 分钟"
+          }
+        }
+      }
+    },
+    "%lld min" : {
+      "comment" : "temp basal remaining minutes",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld دقيقة"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld דקות"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld perc"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 分"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 분"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld мин"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld dakika"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld хв"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld phút"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 分钟"
           }
         }
       }
@@ -7428,6 +7752,9 @@
           }
         }
       }
+    },
+    "Bolus in progress..." : {
+
     },
     "Bolus issue. Patch is already bolussing" : {
       "comment" : "MedtrumError patch bolussing",
@@ -29131,162 +29458,164 @@
         }
       }
     },
-    "Set Temporary Basal" : {
+    "Set Manual Temp Basal" : {
+      "comment" : "Button text for setting manual temporary basal rate",
+      "extractionState" : "manual",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ضبط معدل الأنسولين الأساسي المؤقت"
+            "value" : "ضبط معدل الأنسولين الأساسي المؤقت يدويًا"
           }
         },
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nastavit dočasnou bazální dávku"
+            "value" : "Nastavit ruční dočasnou bazální dávku"
           }
         },
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Indstil midlertidig basal"
+            "value" : "Indstil manuel midlertidig basalrate"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Temporäre Basalrate einstellen"
+            "value" : "Manuelle temporäre Basalrate einstellen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Set Temporary Basal"
+            "value" : "Set Manual Temp Basal"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Establecer la dosis basal temporal"
+            "value" : "Establecer tasa basal temporal manual"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Väliaikaisen perusannoksen asettaminen"
+            "value" : "Aseta manuaalinen väliaikainen perusannos"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Définir le débit basal temporaire"
+            "value" : "Définir le débit basal temporaire manuel"
           }
         },
         "he" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "הגדר בסיס זמני"
+            "value" : "הגדרת טמפרטורה בסיסית ידנית"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ideiglenes bazális érték beállítása"
+            "value" : "Kézi ideiglenes bazális beállítása"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Imposta il basale temporaneo"
+            "value" : "Imposta tasso basale temporaneo manuale"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "一時的な基礎インスリン量を設定する"
+            "value" : "手動一時ベースレートを設定"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "일시적 기저 인슐린 설정"
+            "value" : "수동 임시 기저율 설정"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Angi midlertidig basal"
+            "value" : "Angi manuell midlertidig basalrate"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tijdelijke basale waarde instellen"
+            "value" : "Handmatige tijdelijke basale dosering instellen"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ustaw tymczasową dawkę podstawową"
+            "value" : "Ustaw ręczną tymczasową dawkę bazową"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Definir basal temporária"
+            "value" : "Definir taxa basal temporária manual"
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Setare bazală temporară"
+            "value" : "Setare rată bazală temporară manuală"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Установить временный базовый уровень"
+            "value" : "Установить ручную временную базовую дозу"
           }
         },
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nastaviť dočasnú bazálnu dávku"
+            "value" : "Nastaviť manuálnu dočasnú bazálnu dávku"
           }
         },
         "sl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nastavi začasno bazalno dozo"
+            "value" : "Nastavi ročno začasno bazalno stopnjo"
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ställ in tillfällig basaldos"
+            "value" : "Ställ in manuell tillfällig basaldos"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Geçici Bazal Değeri Ayarla"
+            "value" : "Manuel Geçici Bazal Hızı Ayarla"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Встановити тимчасовий базовий рівень"
+            "value" : "Налаштувати ручну тимчасову базову дозу"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Đặt cơ bản tạm thời"
+            "value" : "Đặt nhiệt độ cơ bản bằng tay"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "设置临时基础率"
+            "value" : "设置手动临时基础率"
           }
         }
       }
