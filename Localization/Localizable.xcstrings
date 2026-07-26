@@ -3698,7 +3698,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "激活新补丁"
+            "value" : "激活新储药贴"
           }
         }
       }
@@ -3860,7 +3860,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "激活补丁"
+            "value" : "激活储药贴"
           }
         }
       }
@@ -4022,7 +4022,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "激活补丁"
+            "value" : "激活储药贴"
           }
         }
       }
@@ -4184,7 +4184,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁激活于"
+            "value" : "储药贴激活于"
           }
         }
       }
@@ -5804,7 +5804,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "警报：补丁故障"
+            "value" : "警报：储药贴故障"
           }
         }
       }
@@ -6614,7 +6614,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "验证并停用补丁"
+            "value" : "验证并停用储药贴"
           }
         }
       }
@@ -7913,7 +7913,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "栓剂问题。补丁已经在栓塞"
+            "value" : "栓剂问题。储药贴已经在栓塞"
           }
         }
       }
@@ -8075,7 +8075,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "栓剂问题。补丁暂停。恢复配送"
+            "value" : "栓剂问题。储药贴暂停。恢复配送"
           }
         }
       }
@@ -8723,7 +8723,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "现在就更换补丁。胰岛素输送将在 %@ 或胰岛素耗尽时停止。"
+            "value" : "现在就更换储药贴。胰岛素输送将在 %@ 或胰岛素耗尽时停止。"
           }
         }
       }
@@ -8885,7 +8885,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "现在就更换补丁。胰岛素输送将在 %@ 或胰岛素耗尽时停止。"
+            "value" : "现在就更换储药贴。胰岛素输送将在 %@ 或胰岛素耗尽时停止。"
           }
         }
       }
@@ -9693,7 +9693,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "将您的泵库连接到补丁。"
+            "value" : "将您的泵库连接到储药贴。"
           }
         }
       }
@@ -10827,7 +10827,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "停用补丁"
+            "value" : "停用储药贴"
           }
         }
       }
@@ -10989,7 +10989,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "停用补丁"
+            "value" : "停用储药贴"
           }
         }
       }
@@ -12285,7 +12285,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "尚未将补丁附加到正文中"
+            "value" : "尚未将储药贴附加到正文中"
           }
         }
       }
@@ -12933,7 +12933,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁过期于"
+            "value" : "储药贴过期于"
           }
         }
       }
@@ -13419,7 +13419,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "扩展补丁已过期。仅限基质。"
+            "value" : "扩展储药贴已过期。仅限基质。"
           }
         }
       }
@@ -13581,7 +13581,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "连接补丁失败"
+            "value" : "连接储药贴失败"
           }
         }
       }
@@ -13743,7 +13743,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "连接补丁失败 -> 已超时"
+            "value" : "连接储药贴失败 -> 已超时"
           }
         }
       }
@@ -14067,7 +14067,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "用绝缘填充补丁。注意：激活至少需要70U。"
+            "value" : "用绝缘填充储药贴。注意：激活至少需要70U。"
           }
         }
       }
@@ -15525,7 +15525,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "您希望最大暂停补丁多长时间？之后将自动恢复。"
+            "value" : "您希望最大暂停储药贴多长时间？之后将自动恢复。"
           }
         }
       }
@@ -18603,7 +18603,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在连接到补丁前，请确保序列号正确。"
+            "value" : "在连接到储药贴前，请确保序列号正确。"
           }
         }
       }
@@ -19735,7 +19735,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "没有活动补丁"
+            "value" : "没有活动储药贴"
           }
         }
       }
@@ -20545,7 +20545,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无补丁"
+            "value" : "无储药贴"
           }
         }
       }
@@ -21193,7 +21193,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "过期补丁通知"
+            "value" : "过期储药贴通知"
           }
         }
       }
@@ -21841,7 +21841,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁激活"
+            "value" : "储药贴激活"
           }
         }
       }
@@ -22003,7 +22003,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁激活"
+            "value" : "储药贴激活"
           }
         }
       }
@@ -22165,7 +22165,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁详情"
+            "value" : "储药贴详情"
           }
         }
       }
@@ -22327,7 +22327,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁错误"
+            "value" : "储药贴错误"
           }
         }
       }
@@ -22489,7 +22489,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁已过期"
+            "value" : "储药贴已过期"
           }
         }
       }
@@ -22651,7 +22651,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁已过期。仅限基质。"
+            "value" : "储药贴已过期。仅限基质。"
           }
         }
       }
@@ -22813,7 +22813,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁ID"
+            "value" : "储药贴ID"
           }
         }
       }
@@ -22975,7 +22975,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁程序已暂停。已超出 %lld 个 U 的限制。如果您提高限制，即可立即清除此警告。如果您稍等片刻，补丁程序将在足够长的时间后恢复运行。"
+            "value" : "储药贴程序已暂停。已超出 %lld 个 U 的限制。如果您提高限制，即可立即清除此警告。如果您稍等片刻，储药贴程序将在足够长的时间后恢复运行。"
           }
         }
       }
@@ -23137,7 +23137,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁生存期"
+            "value" : "储药贴生存期"
           }
         }
       }
@@ -23299,7 +23299,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁生存期"
+            "value" : "储药贴生存期"
           }
         }
       }
@@ -23461,7 +23461,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁设置"
+            "value" : "储药贴设置"
           }
         }
       }
@@ -23623,7 +23623,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁设置"
+            "value" : "储药贴设置"
           }
         }
       }
@@ -23785,7 +23785,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁替换"
+            "value" : "储药贴替换"
           }
         }
       }
@@ -23947,7 +23947,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁设置"
+            "value" : "储药贴设置"
           }
         }
       }
@@ -24109,7 +24109,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁设置"
+            "value" : "储药贴设置"
           }
         }
       }
@@ -24271,7 +24271,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁状态"
+            "value" : "储药贴状态"
           }
         }
       }
@@ -24433,7 +24433,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁状态"
+            "value" : "储药贴状态"
           }
         }
       }
@@ -24595,7 +24595,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁时间"
+            "value" : "储药贴时间"
           }
         }
       }
@@ -24757,7 +24757,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "补丁时间"
+            "value" : "储药贴时间"
           }
         }
       }
@@ -25081,7 +25081,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "将注射器放在补丁中，然后拉出1到2破碎的空气。"
+            "value" : "将注射器放在储药贴中，然后拉出1到2破碎的空气。"
           }
         }
       }
@@ -25567,7 +25567,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "之前的补丁详情"
+            "value" : "之前的储药贴详情"
           }
         }
       }
@@ -27347,7 +27347,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "从补丁中移除安全封面。"
+            "value" : "从储药贴中移除安全封面。"
           }
         }
       }
@@ -27509,7 +27509,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "现在就更换补丁！"
+            "value" : "现在就更换储药贴！"
           }
         }
       }
@@ -31235,7 +31235,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "暂停补丁"
+            "value" : "暂停储药贴"
           }
         }
       }
@@ -32207,7 +32207,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "同步补丁数据"
+            "value" : "同步储药贴数据"
           }
         }
       }
@@ -32369,7 +32369,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "临时篮子"
+            "value" : "临时基础率"
           }
         }
       }
@@ -34637,7 +34637,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "点击按钮时，您将获得生物计提示。 完成后，补丁将被停用，您将被提示配对一个新补丁。"
+            "value" : "点击按钮时，您将获得生物计提示。 完成后，储药贴将被停用，您将被提示配对一个新储药贴。"
           }
         }
       }
@@ -35285,7 +35285,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在激活补丁之前，您将先设置您的绝缘类型和基本补丁设置。"
+            "value" : "在激活储药贴之前，您将先设置您的绝缘类型和基本储药贴设置。"
           }
         }
       }
@@ -35447,7 +35447,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "您的补丁还剩 %lld 小时"
+            "value" : "您的储药贴还剩 %lld 小时"
           }
         }
       }
@@ -35609,7 +35609,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "您的补丁检测到了异常！"
+            "value" : "您的储药贴检测到了异常！"
           }
         }
       }
@@ -35771,7 +35771,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "您的补丁已达到每日最大值！"
+            "value" : "您的储药贴已达到每日最大值！"
           }
         }
       }
@@ -35933,7 +35933,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "您的补丁已达到每小时最大值！"
+            "value" : "您的储药贴已达到每小时最大值！"
           }
         }
       }
@@ -36095,7 +36095,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "您的补丁处于故障状态！"
+            "value" : "您的储药贴处于故障状态！"
           }
         }
       }
@@ -36257,7 +36257,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你的胰岛素补丁用完了"
+            "value" : "你的胰岛素储药贴用完了"
           }
         }
       }
@@ -36581,7 +36581,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "您的补丁即将过期！"
+            "value" : "您的储药贴即将过期！"
           }
         }
       }
