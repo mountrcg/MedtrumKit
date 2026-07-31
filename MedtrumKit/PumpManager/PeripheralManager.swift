@@ -310,6 +310,7 @@ extension PeripheralManager: CBPeripheralDelegate {
         writeCallback.leave()
         writeQueue = nil
         currentPacket = nil
+        writeCallback.leave()
     }
 
     private func handleHeartbeat(data: Data) {
