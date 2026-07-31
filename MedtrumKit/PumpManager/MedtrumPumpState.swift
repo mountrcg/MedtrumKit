@@ -105,12 +105,6 @@ public class MedtrumPumpState: RawRepresentable {
             basalState = .active
         }
 
-        if let bolusStateRaw = rawValue["bolusState"] as? BolusState.RawValue {
-            bolusState = BolusState(rawValue: bolusStateRaw) ?? .noBolus
-        } else {
-            bolusState = .noBolus
-        }
-
         if let alarmSettingRaw = rawValue["alarmSetting"] as? AlarmSettings.RawValue {
             alarmSetting = AlarmSettings(rawValue: alarmSettingRaw) ?? .BeepOnly
         } else {
@@ -152,7 +146,6 @@ public class MedtrumPumpState: RawRepresentable {
         reservoir = 0
         battery = 0
         basalState = .active
-        bolusState = .noBolus
         alarmSetting = .BeepOnly
         expiryMode = .default
         notificationAfterActivation = .hours(72)
@@ -189,7 +182,6 @@ public class MedtrumPumpState: RawRepresentable {
         value["maxHourlyInsulin"] = maxHourlyInsulin
         value["maxDailyInsulin"] = maxDailyInsulin
         value["basalSchedule"] = basalSchedule.rawValue
-        value["bolusState"] = bolusState.rawValue
         value["initialReservoir"] = initialReservoir
         value["bolusDose"] = bolusDose?.rawValue
         value["basalDose"] = basalDose.rawValue
@@ -259,10 +251,19 @@ public class MedtrumPumpState: RawRepresentable {
     // **** THESE VALUES SHOULD NOT BE PERSISTED ****
     public var primeProgress: UInt8 = 0
     public var isConnected: Bool = false
+    // if it was persisted, and we happen to restore `true` - there will be nothing left to reset it to `false`
+    public var isCancelingBolus: Bool = false
     // **** END ****
 
-    public var bolusState: BolusState
     public var bolusDose: UnfinalizedDose?
+
+    public var bolusState: BolusState {
+        if isCancelingBolus {
+            return .canceling
+        }
+
+        return bolusDose == nil ? .noBolus : .inProgress
+    }
 
     // basalState is the basalState from the patch itself
     // Preventing acting on an out-dated basalDose
@@ -284,18 +285,15 @@ public class MedtrumPumpState: RawRepresentable {
     }
 
     var bolusDeliveryState: PumpManagerStatus.BolusState {
-        switch bolusState {
-        case .noBolus:
-            return .noBolus
-        case .canceling:
+        if isCancelingBolus {
             return .canceling
-        case .inProgress:
-            if let dose = bolusDose?.toDoseEntry(isMutable: true) {
-                return .inProgress(dose)
-            }
+        }
 
+        guard let dose = bolusDose?.toDoseEntry(isMutable: true) else {
             return .noBolus
         }
+
+        return .inProgress(dose)
     }
 
     public var currentBaseBasalRate: Double {
