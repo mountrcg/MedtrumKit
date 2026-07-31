@@ -303,7 +303,7 @@ public class MedtrumPumpState: RawRepresentable {
         let startOfDay = Calendar.current.startOfDay(for: now)
         let nowTimeInterval = now.timeIntervalSince(startOfDay)
 
-        return basalSchedule.entries.last(where: { $0.startTime < nowTimeInterval })?.rate ?? 0
+        return basalSchedule.entries.last(where: { $0.startTime <= nowTimeInterval })?.rate ?? 0
     }
 
     public var model: String {

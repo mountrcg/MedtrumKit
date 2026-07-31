@@ -200,7 +200,7 @@ public class UnfinalizedDose {
         let startOfDay = Calendar.current.startOfDay(for: now)
         let nowTimeInterval = now.timeIntervalSince(startOfDay)
 
-        let currentRate = basalSchedule.entries.last(where: { $0.startTime < nowTimeInterval })?.rate ?? 0
+        let currentRate = basalSchedule.entries.last(where: { $0.startTime <= nowTimeInterval })?.rate ?? 0
         return UnfinalizedDose(
             basalRate: currentRate,
             insulinType: insulineType,
