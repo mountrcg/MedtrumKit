@@ -46,7 +46,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
             return
         }
 
-        if !manager.isScanning {
+        if manager.isScanning {
             manager.stopScan()
         }
 

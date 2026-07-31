@@ -152,7 +152,7 @@ extension PeripheralManager {
         case .success:
             log.info("Connected to pump!")
 
-            pumpManager.state.isConnected = false
+            pumpManager.state.isConnected = true
             pumpManager.notifyStateDidChange()
             completion?(nil)
         }
