@@ -248,14 +248,28 @@ public class MedtrumPumpState: RawRepresentable {
     public var expiryMode: ExpiryMode
     public var notificationAfterActivation: TimeInterval
 
+    /// Resetting "cancelingBolusSince" to nil depends on `ensureConnected` calling the callback.
+    /// `ensureConnected` orphans its completion in a few places.
+    /// So instead of a boolean, we use a date, which "auto-expires" after this timeout.
+    /// This timeout is longer than the 30s write timeout plus a reconnect.
+    private static let cancelBolusTimeout: TimeInterval = .minutes(2)
+
     // **** THESE VALUES SHOULD NOT BE PERSISTED ****
     public var primeProgress: UInt8 = 0
     public var isConnected: Bool = false
-    // if it was persisted, and we happen to restore `true` - there will be nothing left to reset it to `false`
-    public var isCancelingBolus: Bool = false
+    // if it was persisted, and we happen to restore a date - there will be nothing left to reset it to `nil`
+    public var cancelingBolusSince: Date?
     // **** END ****
 
     public var bolusDose: UnfinalizedDose?
+
+    private var isCancelingBolus: Bool {
+        guard let since = cancelingBolusSince else {
+            return false
+        }
+
+        return Date.now.timeIntervalSince(since) < MedtrumPumpState.cancelBolusTimeout
+    }
 
     public var bolusState: BolusState {
         if isCancelingBolus {

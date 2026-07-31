@@ -328,20 +328,20 @@ public extension MedtrumPumpManager {
 
     private func resetBolusState() {
         state.bolusDose = nil
-        state.isCancelingBolus = false
+        state.cancelingBolusSince = nil
         notifyStateDidChange()
     }
 
     func cancelBolus(completion: @escaping (LoopKit.PumpManagerResult<LoopKit.DoseEntry?>) -> Void) {
         log.info("Cancelling bolus...")
 
-        state.isCancelingBolus = true
+        state.cancelingBolusSince = Date.now
         notifyStateDidChange()
 
         ensureConnectedAndActive { error in
             if let error = error {
                 self.log.error("Failed to connect: \(error.localizedDescription)")
-                self.state.isCancelingBolus = false
+                self.state.cancelingBolusSince = nil
                 self.notifyStateDidChange()
 
                 completion(.failure(.communication(error)))
@@ -351,7 +351,7 @@ public extension MedtrumPumpManager {
             let result = self.bluetooth.write(CancelBolusPacket())
             if case let .failure(error) = result {
                 self.log.error("Failed to cancel bolus: \(error.localizedDescription)")
-                self.state.isCancelingBolus = false
+                self.state.cancelingBolusSince = nil
                 self.notifyStateDidChange()
 
                 completion(.failure(.communication(error)))
@@ -361,7 +361,7 @@ public extension MedtrumPumpManager {
             self.log.info("Bolus cancelled!")
 
             guard let doseEntry = self.state.bolusDose else {
-                self.state.isCancelingBolus = false
+                self.state.cancelingBolusSince = nil
                 self.notifyStateDidChange()
 
                 completion(.success(nil))
@@ -379,7 +379,7 @@ public extension MedtrumPumpManager {
             )
 
             self.state.bolusDose = nil
-            self.state.isCancelingBolus = false
+            self.state.cancelingBolusSince = nil
             self.state.lastSync = Date.now
             self.notifyStateDidChange()
 
