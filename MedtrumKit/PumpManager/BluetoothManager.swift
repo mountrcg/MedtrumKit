@@ -86,7 +86,15 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
             self.connectCompletion = nil
             self.connectionTimeout?.cancel()
             self.connectionTimeout = nil
-            completion(result)
+
+            // Never on the caller's thread. Completions issue blocking BLE writes: from the main
+            // thread that freezes the UI for up to 30s per packet (syncPumpTime sends three), and
+            // from managerQueue it would deadlock outright - that is the queue the response has to
+            // be delivered on. Today the managerQueue callers only ever report an error, and every
+            // completion returns early on error before writing, but nothing enforces that.
+            DispatchQueue.global(qos: .userInitiated).async {
+                completion(result)
+            }
         }
 
         if let peripheral = peripheral, peripheral.state == .connected {
