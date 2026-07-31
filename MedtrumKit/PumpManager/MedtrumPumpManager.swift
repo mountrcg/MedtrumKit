@@ -427,38 +427,14 @@ public extension MedtrumPumpManager {
                     return
                 }
 
+                self.state.basalState = .active
                 self.log.info("Cancelled temp basal!")
             }
 
             if duration < .ulpOfOne {
                 // Need to cancel temp basal, but is already cancelled
                 // Only need to report back to algorithm
-                let now = Date.now
-                var events = self.getActivePumpEvents(endDate: now)
-
-                // Maybe the temp basal already expired
-                // So only add the basal event if it isn't already in the list
-                if !events.contains(where: { $0.type == .basal }) {
-                    let basalDose = UnfinalizedDose(
-                        basalRate: self.state.currentBaseBasalRate,
-                        insulinType: self.state.insulinType,
-                        startDate: now
-                    )
-
-                    events.append(
-                        NewPumpEvent.basal(
-                            dose: basalDose.toDoseEntry(),
-                            date: now
-                        )
-                    )
-
-                    self.state.basalDose = basalDose
-                }
-
-                self.state.lastSync = Date.now
-                self.notifyStateDidChange()
-
-                self.emitPumpEvents(events)
+                self.reportScheduledBasal()
 
                 completion(nil)
                 return
@@ -469,6 +445,10 @@ public extension MedtrumPumpManager {
 
             if case let .failure(error) = tempBasalResult {
                 self.log.error("Failed to set temp basal: \(error.localizedDescription)")
+
+                // the cancel already succeeded, but new TBR failed - the patch is running the scheduled basal now
+                self.reportScheduledBasal()
+
                 completion(.communication(error))
                 return
             }
@@ -490,6 +470,7 @@ public extension MedtrumPumpManager {
             )
 
             self.state.basalDose = tempBasalDose
+            self.state.basalState = .tempBasal
             self.state.lastSync = Date.now
             self.notifyStateDidChange()
 
@@ -497,6 +478,35 @@ public extension MedtrumPumpManager {
 
             completion(nil)
         }
+    }
+
+    private func reportScheduledBasal() {
+        let now = Date.now
+        var events = getActivePumpEvents(endDate: now)
+
+        // Maybe the temp basal already expired
+        // So only add the basal event if it isn't already in the list
+        if !events.contains(where: { $0.type == .basal }) {
+            let basalDose = UnfinalizedDose(
+                basalRate: state.currentBaseBasalRate,
+                insulinType: state.insulinType,
+                startDate: now
+            )
+
+            events.append(
+                NewPumpEvent.basal(
+                    dose: basalDose.toDoseEntry(),
+                    date: now
+                )
+            )
+
+            state.basalDose = basalDose
+        }
+
+        state.lastSync = Date.now
+        notifyStateDidChange()
+
+        emitPumpEvents(events)
     }
 
     func suspendDelivery(completion: @escaping ((any Error)?) -> Void) {
