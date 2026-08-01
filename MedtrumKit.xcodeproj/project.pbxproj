@@ -126,6 +126,7 @@
 		B7189AEA2C15A8CE00703DE2 /* LoopKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B7189AE92C15A8CE00703DE2 /* LoopKit.framework */; };
 		B7D3A8DB2C148CC4002EE003 /* MedtrumKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B7D3A8D02C148CC4002EE003 /* MedtrumKit.framework */; };
 		DD334CAC2F941CC90082A5B5 /* PatchLifetimeFormatting+Helper.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD334CAB2F941CC90082A5B5 /* PatchLifetimeFormatting+Helper.swift */; };
+		F28B06BC301E269100A59FA7 /* ConnectAttempt.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28B06BB301E268F00A59FA7 /* ConnectAttempt.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -281,6 +282,7 @@
 		B7D3A8DA2C148CC4002EE003 /* MedtrumKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MedtrumKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B7D3A8ED2C14F0EF002EE003 /* MedtrumKitPlugin.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MedtrumKitPlugin.swift; sourceTree = "<group>"; };
 		DD334CAB2F941CC90082A5B5 /* PatchLifetimeFormatting+Helper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PatchLifetimeFormatting+Helper.swift"; sourceTree = "<group>"; };
+		F28B06BB301E268F00A59FA7 /* ConnectAttempt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectAttempt.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -550,6 +552,7 @@
 				3E1390112D6E59B000A146C1 /* MedtrumPumpState.swift */,
 				B7189AE52C15A52800703DE2 /* MedtrumPumpManager.swift */,
 				3E13900F2D6E534600A146C1 /* BluetoothManager.swift */,
+				F28B06BB301E268F00A59FA7 /* ConnectAttempt.swift */,
 				3E1390182D6E5F2B00A146C1 /* PeripheralManager.swift */,
 				3E9D8B0B2D88A3EF00008AF2 /* MedtrumDoseProgressReporter.swift */,
 				3EFCE5CB2FDC8FD20049A70A /* MedtrumAlert.swift */,
@@ -879,6 +882,7 @@
 				3E868C2D2F75BEED00ED6336 /* ClearAlertPacket.swift in Sources */,
 				3E24AEC82DA17B4900C7733C /* PatchActivationViewModel.swift in Sources */,
 				3E5060242D70FED500376609 /* SynchronizePacket.swift in Sources */,
+				F28B06BC301E269100A59FA7 /* ConnectAttempt.swift in Sources */,
 				3EFCE5CC2FDC8FD50049A70A /* MedtrumAlert.swift in Sources */,
 				3EEA51FF2D7E1D12000C9E1E /* SetBasalProfilePacket.swift in Sources */,
 				3E24AEC22DA1727800C7733C /* PatchPrimingView.swift in Sources */,
