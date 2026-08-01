@@ -395,6 +395,7 @@ extension MedtrumKitSettingsViewModel {
 
         showPumpTimeSyncWarning = state.shouldShowTimeWarning()
         patchState = state.pumpState
+        useSilentTones = state.useSilentTones
         patchStateString = state.pumpState.description
         pumpTime = state.pumpTime
         pumpTimeSyncedAt = state.pumpTimeSyncedAt
