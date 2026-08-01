@@ -48,6 +48,13 @@ class MedtrumKitSettingsViewModel: PatchLifetimeFormatting, ObservableObject, Pu
     @Published var showingSuspendPicker = false
     @Published var hasPreviousPatch = false
     @Published var isClearingAlert = false
+    
+    @Published var useSilentTones = false {
+        didSet {
+            pumpManager?.state.useSilentTones = useSilentTones
+            pumpManager?.notifyStateDidChange()
+        }
+    }
 
     public var pumpName: String {
         pumpManager?.state.pumpName ?? "Medtrum Nano"

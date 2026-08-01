@@ -52,6 +52,7 @@ public class MedtrumPumpState: RawRepresentable {
         isOnboarded = rawValue["isOnboarded"] as? Bool ?? false
         lastSync = rawValue["lastSync"] as? Date ?? Date.distantPast
         pumpSN = rawValue["pumpSN"] as? Data ?? Data()
+        useSilentTones = rawValue["useSilentTones"] as? Bool ?? false
         lowReservoirWarning = rawValue["lowReservoirWarning"] as? Double
         sessionToken = rawValue["sessionToken"] as? Data ?? Data()
         backupSessionToken = rawValue["backupSessionToken"] as? Data ?? Data()
@@ -129,6 +130,7 @@ public class MedtrumPumpState: RawRepresentable {
         isOnboarded = false
         lastSync = Date.distantPast
         pumpSN = Data()
+        useSilentTones = false
         lowReservoirWarning = nil
         bolusDose = nil
         sessionToken = Data()
@@ -191,6 +193,7 @@ public class MedtrumPumpState: RawRepresentable {
         value["alarmSetting"] = alarmSetting.rawValue
         value["expiryMode"] = expiryMode.rawValue
         value["notificationAfterActivation"] = notificationAfterActivation
+        value["useSilentTones"] = useSilentTones
 
         if let previousPatch = previousPatch {
             do {
@@ -206,6 +209,7 @@ public class MedtrumPumpState: RawRepresentable {
     public var lastSync: Date
     public var pumpSN: Data
     public var lowReservoirWarning: Double?
+    public var useSilentTones: Bool
 
     // Patch specific data
     public var sessionToken: Data
