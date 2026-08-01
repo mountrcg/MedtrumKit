@@ -4,11 +4,11 @@ import LoopKit
 public extension NewPumpEvent {
     private static let dateFormatter = ISO8601DateFormatter()
 
-    static func bolus(dose: DoseEntry, units: Double, date: Date = Date.now) -> NewPumpEvent {
+    static func bolus(dose: DoseEntry, scheduledUnits: Double, date: Date = Date.now) -> NewPumpEvent {
         NewPumpEvent(
             date: date,
             dose: dose,
-            raw: "\(DoseType.bolus.rawValue) \(units) \(dateFormatter.string(from: date))".data(using: .utf8) ?? Data([]),
+            raw: "\(DoseType.bolus.rawValue) \(scheduledUnits) \(dateFormatter.string(from: date))".data(using: .utf8) ?? Data([]),
             title: String(localized: "Bolus", comment: "Pump Event title for UnfinalizedDose with doseType of .bolus")
         )
     }
@@ -17,7 +17,7 @@ public extension NewPumpEvent {
         let dose = unfinalizedDose.toDoseEntry(isMutable: true)
         return NewPumpEvent.bolus(
             dose: dose,
-            units: dose.programmedUnits,
+            scheduledUnits: unfinalizedDose.value,
             date: dose.startDate
         )
     }
