@@ -1,4 +1,5 @@
 import CoreBluetooth
+import UIKit
 import HealthKit
 import LoopKit
 
@@ -24,6 +25,19 @@ public class MedtrumPumpManager: DeviceManager {
         self.state = state
         oldState = MedtrumPumpState(rawValue: state.rawValue)
         bluetooth = BluetoothManager()
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appMovedToBackground),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appMovedToForeground),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
 
         bluetooth.pumpManager = self
     }
@@ -137,6 +151,18 @@ public class MedtrumPumpManager: DeviceManager {
             localIdentifier: nil,
             udiDeviceIdentifier: nil
         )
+    }
+    
+    private let backgroundTask = BackgroundTask()
+    @objc func appMovedToBackground() {
+        if state.useSilentTones {
+            log.info("Starting silent tones")
+            backgroundTask.startBackgroundTask()
+        }
+    }
+
+    @objc func appMovedToForeground() {
+        backgroundTask.stopBackgroundTask()
     }
 }
 
