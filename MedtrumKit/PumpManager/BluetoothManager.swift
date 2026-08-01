@@ -113,6 +113,20 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
             return
         }
 
+        // We lost the reference but know which device we are paired with. Ask CoreBluetooth for it
+        // back rather than scanning: a connect to a known peripheral is honoured in the background
+        // (and stays pending until the pump is in range again), while a scan only ever discovers
+        // anything while the app is in the foreground.
+        if manager.state == .poweredOn,
+           let identifier = pumpManager?.state.peripheralIdentifier,
+           let peripheral = manager.retrievePeripherals(withIdentifiers: [identifier]).first
+        {
+            logger.info("Retrieved known peripheral \(identifier), reconnecting")
+            startTimeout(attempt, seconds: .seconds(15))
+            connect(peripheral: peripheral)
+            return
+        }
+
         let connectedDevices = manager.retrieveConnectedPeripherals(withServices: [CBUUID.SERVICE_UUID])
         if let peripheral = connectedDevices.first(where: { $0.name == "MT" }) {
             // Phone is already connected, but the app is not
@@ -154,8 +168,16 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         }
     }
 
+    /// Arms the deadline for `attempt`, replacing any deadline already on it. Called at each point
+    /// the connect flow makes progress, so the allowance for waking up suspended starts over.
     private func startTimeout(_ attempt: ConnectAttempt, seconds: TimeInterval) {
+        attempt.remainingExtensions = ConnectAttempt.maxExtensions
+        armTimeout(attempt, seconds: seconds)
+    }
+
+    private func armTimeout(_ attempt: ConnectAttempt, seconds: TimeInterval) {
         attempt.timeout?.cancel()
+        attempt.armedAt = .now
 
         attempt.timeout = Task { [weak self, weak attempt] in
             do {
@@ -168,6 +190,22 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
             // The one condition that matters: is this still the attempt in flight? Covers being
             // superseded by a re-arm, and waking a moment before cancellation landed.
             guard let self, let attempt, self.attempt === attempt else {
+                return
+            }
+
+            // `Task.sleep` is frozen while iOS has the app suspended, so waking far past the budget
+            // means we were asleep for most of it rather than waiting on a pump that never answered
+            // - and we typically wake because the connection we were waiting for just arrived. Give
+            // the attempt the budget it never got instead of failing a connect that may be landing
+            // in this very instant. Bounded, so a phone that keeps suspending still terminates.
+            let elapsed = Date.now.timeIntervalSince(attempt.armedAt)
+            if elapsed > seconds * 2, attempt.remainingExtensions > 0 {
+                attempt.remainingExtensions -= 1
+                self.logger
+                    .warning(
+                        "Timeout woke after \(Int(elapsed))s of a \(Int(seconds))s budget - app was suspended, re-arming"
+                    )
+                self.armTimeout(attempt, seconds: seconds)
                 return
             }
 
@@ -206,9 +244,17 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         }
     }
 
+    /// Forgets the device entirely - used when the patch is deactivated and when the pump base is
+    /// swapped for another one. It also drops the stored identifier, so the next connect has to
+    /// find the base by scanning, which is fine: both of those are foreground activities.
     func clearPeripheral() {
         peripheral = nil
         peripheralManager = nil
+
+        if pumpManager?.state.peripheralIdentifier != nil {
+            pumpManager?.state.peripheralIdentifier = nil
+            pumpManager?.notifyStateDidChange()
+        }
     }
 }
 
@@ -306,9 +352,9 @@ extension BluetoothManager {
     func centralManager(_: CBCentralManager, didConnect peripheral: CBPeripheral) {
         logger.info("Connected to pump: \(peripheral.name ?? "<NO_NAME>")!")
 
-        // Both guards below drop the link rather than just returning. `peripheral` is already set at
-        // this point, so bailing out would leave a live peripheral with no PeripheralManager behind
-        // it: the next ensureConnected reports "Already connect!" while every write fails with
+        // This guard drops the link rather than just returning. `peripheral` is already set at this
+        // point, so bailing out would leave a live peripheral with no PeripheralManager behind it:
+        // the next ensureConnected reports "Already connect!" while every write fails with
         // .noManager, and nothing clears that until the link happens to drop on its own.
         guard let pumpManager = pumpManager else {
             logger.warning("No pumpManager...")
@@ -316,17 +362,37 @@ extension BluetoothManager {
             return
         }
 
-        // The attempt this belongs to already gave up - typically its timeout fired while the pump
-        // was out of range, and it only came back now.
-        guard let attempt = attempt else {
-            logger.warning("No connectCompletion...")
-            disconnect(force: true)
-            return
+        // The attempt this belongs to already gave up - typically its deadline fired while the app
+        // was suspended, in the same instant the link finally came up. Do not throw the connection
+        // away: reconnecting to a known peripheral is the only thing that works while backgrounded,
+        // and dropping it here strands us on the scan path, which does not. Nobody is waiting on
+        // the result any more, so adopt it under an attempt of our own and finish the flow.
+        let attempt: ConnectAttempt
+        if let inFlight = self.attempt {
+            attempt = inFlight
+        } else {
+            logger.info("No connectCompletion, adopting the connection anyway")
+
+            attempt = ConnectAttempt { [weak self] (error: MedtrumConnectError?) in
+                if let error = error {
+                    self?.logger.error("Failed to complete adopted connection: \(error)")
+                } else {
+                    self?.logger.info("Adopted connection is ready")
+                }
+            }
+            self.attempt = attempt
         }
 
         forcedDisconnect = false
 
         self.peripheral = peripheral
+        // Remember what to reconnect to. Only identifiers that actually produced a connection get
+        // stored, and it survives an app restart, so the scan path is only ever needed for pairing.
+        if pumpManager.state.peripheralIdentifier != peripheral.identifier {
+            pumpManager.state.peripheralIdentifier = peripheral.identifier
+            pumpManager.notifyStateDidChange()
+        }
+
         peripheralManager = PeripheralManager(peripheral, self, pumpManager) { [weak self] error in
             self?.finish(attempt, error)
         }
