@@ -7913,7 +7913,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "栓剂问题。储药器已经在栓塞"
+            "value" : "推注问题。储药器已经在推注"
           }
         }
       }
@@ -12285,7 +12285,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "尚未将储药器附加到正文中"
+            "value" : "不要把储药器直接贴在身体上"
           }
         }
       }
@@ -13419,7 +13419,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "扩展储药器已过期。仅限基质。"
+            "value" : "扩展储药器已过期。仅限使用基础率功能。"
           }
         }
       }
@@ -14229,7 +14229,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "用隔热填充注射器"
+            "value" : "用注射器注入胰岛素"
           }
         }
       }
@@ -16011,7 +16011,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "防硫\n暂停"
+            "value" : "胰岛素\n暂停"
           }
         }
       }
@@ -16173,7 +16173,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "硫化物交付"
+            "value" : "胰岛素输注"
           }
         }
       }
@@ -16497,7 +16497,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "剩余硫化物"
+            "value" : "剩余胰岛素"
           }
         }
       }
@@ -16821,7 +16821,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "硫磺类型"
+            "value" : "胰岛素类型"
           }
         }
       }
@@ -17793,7 +17793,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "光和蜂鸣声"
+            "value" : "灯光和响铃"
           }
         }
       }
@@ -17955,7 +17955,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "光和振动"
+            "value" : "灯光和振动"
           }
         }
       }
@@ -19087,7 +19087,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "每日最大绝缘量"
+            "value" : "每日最大胰岛素量"
           }
         }
       }
@@ -19249,7 +19249,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "最大每小时绝缘数"
+            "value" : "每小时最大胰岛素量"
           }
         }
       }
@@ -19735,7 +19735,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "没有活动储药器"
+            "value" : "没有激活的储药器"
           }
         }
       }
@@ -20221,7 +20221,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "不送货"
+            "value" : "没有输注"
           }
         }
       }
@@ -21355,7 +21355,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "水库水位低时的通知"
+            "value" : "蓄药池低位通知"
           }
         }
       }
@@ -22651,7 +22651,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "储药器已过期。仅限基质。"
+            "value" : "储药器已过期。仅限使用基础率功能。"
           }
         }
       }
@@ -23137,7 +23137,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "储药器生存期"
+            "value" : "储药器有效期"
           }
         }
       }
@@ -23299,7 +23299,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "储药器生存期"
+            "value" : "储药器有效期"
           }
         }
       }
@@ -25081,7 +25081,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "将注射器放在储药器中，然后拉出1到2破碎的空气。"
+            "value" : "将注射器放在储药器中，然后排出1到2个残留气泡。"
           }
         }
       }
@@ -25729,7 +25729,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "引线"
+            "value" : "启动的"
           }
         }
       }
@@ -25891,7 +25891,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "打底"
+            "value" : "启动"
           }
         }
       }
@@ -26377,7 +26377,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "泵站基准设置"
+            "value" : "泵基础设置"
           }
         }
       }
@@ -27185,7 +27185,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "移除输出"
+            "value" : "移除泵"
           }
         }
       }
@@ -27347,7 +27347,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "从储药器中移除安全封面。"
+            "value" : "从储药器中移除安全盖。"
           }
         }
       }
@@ -27671,7 +27671,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "蓄水池空"
+            "value" : "蓄药池空"
           }
         }
       }
@@ -27995,7 +27995,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "水库低位（%lld U）"
+            "value" : "蓄药池低位（%lld U）"
           }
         }
       }
@@ -28157,7 +28157,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "简历"
+            "value" : "恢复"
           }
         }
       }
@@ -28319,7 +28319,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "简历交付"
+            "value" : "恢复输注"
           }
         }
       }
@@ -28481,7 +28481,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "简历交付"
+            "value" : "恢复输注"
           }
         }
       }
@@ -28643,7 +28643,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "节省"
+            "value" : "保存"
           }
         }
       }
@@ -28967,7 +28967,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "预定的Basal"
+            "value" : "预设的基础率"
           }
         }
       }
@@ -29129,7 +29129,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "选择绝缘类型"
+            "value" : "选择胰岛素类型"
           }
         }
       }
@@ -29291,7 +29291,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "选择您将使用的绝缘类型"
+            "value" : "选择您将使用的胰岛素类型"
           }
         }
       }
@@ -30587,7 +30587,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "停止临时基础胰岛素"
+            "value" : "停止临时基础率"
           }
         }
       }
@@ -30911,7 +30911,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "暂停交付"
+            "value" : "暂停输注"
           }
         }
       }
@@ -32045,7 +32045,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "暂停 - 低 BG"
+            "value" : "暂停 - 低血糖"
           }
         }
       }
@@ -32531,7 +32531,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "药贴只能使用 3 天 8 小时。超过这个时间可能会导致贴片变得不可靠。不建议这样做。请考虑使用正常使用寿命。请注意，最新一代泵底座中的新固件可能会在 5 天（120 小时）后阻止栓塞命令。 "
+            "value" : "药贴只能使用 3 天 8 小时。超过这个时间可能会导致贴片变得不可靠。不建议这样做。请考虑使用正常有效期。请注意，最新一代泵体中的新固件可能会在 5 天（120 小时）后阻止大剂量输注命令。"
           }
         }
       }
@@ -33179,7 +33179,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "切换心跳动模式"
+            "value" : "切换心跳模式（后台刷新）"
           }
         }
       }
@@ -33989,7 +33989,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用正常生存时间(3d 8h)"
+            "value" : "使用正常有效期(3天8小时)"
           }
         }
       }
@@ -34151,7 +34151,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "振动和睡眠"
+            "value" : "震动并响铃"
           }
         }
       }
@@ -34637,7 +34637,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "点击按钮时，您将获得生物计提示。 完成后，储药器将被停用，您将被提示配对一个新储药器。"
+            "value" : "点击按钮后，您将看到一个生物识别提示。完成操作后，储药器将被停用，并提示您配对新的储药器。"
           }
         }
       }
@@ -34799,7 +34799,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "是，禁用心跳动模式"
+            "value" : "是，禁用心跳模式（后台刷新）"
           }
         }
       }
@@ -34961,7 +34961,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "是，启用心跳模式"
+            "value" : "是，启用心跳模式（后台刷新）"
           }
         }
       }
@@ -35285,7 +35285,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在激活储药器之前，您将先设置您的绝缘类型和基本储药器设置。"
+            "value" : "在激活储药器之前，您将先设置您的胰岛素类型和储药器基础设置。"
           }
         }
       }
@@ -35771,7 +35771,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "您的储药器已达到每日最大值！"
+            "value" : "您的储药器已达到每日使用上限最大值！"
           }
         }
       }
@@ -35933,7 +35933,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "您的储药器已达到每小时最大值！"
+            "value" : "您的储药器已达到每小时使用上限最大值！"
           }
         }
       }
@@ -36419,7 +36419,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your patch is running out of insulin!"
+            "value" : "您的储药器胰岛素正在耗尽！"
           }
         }
       }
