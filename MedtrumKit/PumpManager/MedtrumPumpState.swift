@@ -57,6 +57,7 @@ public class MedtrumPumpState: RawRepresentable {
         sessionToken = rawValue["sessionToken"] as? Data ?? Data()
         backupSessionToken = rawValue["backupSessionToken"] as? Data ?? Data()
         patchId = rawValue["patchId"] as? Data ?? Data()
+        peripheralIdentifier = (rawValue["peripheralIdentifier"] as? String).flatMap { UUID(uuidString: $0) }
         patchActivatedAt = rawValue["patchActivatedAt"] as? Date ?? nil
         deviceType = rawValue["deviceType"] as? UInt8 ?? 0
         swVersion = rawValue["swVersion"] as? String ?? "0.0.0"
@@ -136,6 +137,7 @@ public class MedtrumPumpState: RawRepresentable {
         sessionToken = Data()
         backupSessionToken = Data()
         patchId = Data()
+        peripheralIdentifier = nil
         patchActivatedAt = nil
         deviceType = 0
         swVersion = "0.0.0"
@@ -173,6 +175,7 @@ public class MedtrumPumpState: RawRepresentable {
         value["sessionToken"] = sessionToken
         value["backupSessionToken"] = backupSessionToken
         value["patchId"] = patchId
+        value["peripheralIdentifier"] = peripheralIdentifier?.uuidString
         value["patchActivatedAt"] = patchActivatedAt
         value["patchGracePeriodFrom"] = patchGracePeriodFrom
         value["patchExpiresAt"] = patchExpiresAt
@@ -215,6 +218,14 @@ public class MedtrumPumpState: RawRepresentable {
     public var sessionToken: Data
     public var backupSessionToken: Data
     public var patchId: Data
+
+    /// The CoreBluetooth identifier of the pump base we are paired with - the base carries the
+    /// radio, so this survives a patch change. iOS keeps it stable, which lets us get a
+    /// `CBPeripheral` back with `retrievePeripherals(withIdentifiers:)` instead of scanning. That
+    /// matters because scanning finds nothing while the app is in the background, whereas
+    /// reconnecting to a known peripheral is honoured there.
+    public var peripheralIdentifier: UUID?
+
     public var patchActivatedAt: Date?
     public var patchGracePeriodFrom: Date? {
         guard let activatedAt = patchActivatedAt else {
