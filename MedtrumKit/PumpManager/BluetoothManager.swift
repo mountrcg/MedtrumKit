@@ -84,7 +84,8 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         }
     }
 
-    /// Reports `attempt`, if nobody has yet. Must be called on `managerQueue`.
+    /// Reports `attempt` to everyone waiting on it, if nobody has yet. Must be called on
+    /// `managerQueue`.
     private func finish(_ attempt: ConnectAttempt, _ error: MedtrumConnectError?) {
         guard attempt.claim() else {
             return
@@ -94,7 +95,9 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
             self.attempt = nil
         }
 
-        report(error, to: attempt.completion)
+        for completion in attempt.completions {
+            report(error, to: completion)
+        }
     }
 
     func ensureConnected(_ completion: @escaping (MedtrumConnectError?) -> Void) {
@@ -104,9 +107,13 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     }
 
     private func ensureConnectedOnQueue(_ completion: @escaping (MedtrumConnectError?) -> Void) {
-        guard attempt == nil else {
-            logger.error("EnsureConnected is already running...")
-            report(.failedToConnectToDevice, to: completion)
+        // Wait on the connect already in flight instead of failing. A connect owns the link for as
+        // long as auth, synchronize and subscribe take, and anything the loop or the user asks for
+        // in that window used to be turned away outright - a bolus issued in the same second as a
+        // reconnect would fail while the link it needed came up moments later.
+        if let inFlight = attempt {
+            logger.debug("EnsureConnected is already running, waiting on it")
+            inFlight.addCompletion(completion)
             return
         }
 
