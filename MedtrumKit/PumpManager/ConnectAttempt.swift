@@ -3,6 +3,8 @@ import Foundation
 /// One connect attempt: the caller waiting on it, and the deadline that guarantees they hear
 /// back. Connect, disconnect, timeout and the auth flow all race to report a result, so the
 /// attempt owns which of them wins rather than each site checking for itself.
+///
+/// NOT thread safe, `BluetoothManager` MUST access its attempt from `managerQueue`.
 final class ConnectAttempt {
     let completion: (MedtrumConnectError?) -> Void
     var timeout: Task<Void, Never>?

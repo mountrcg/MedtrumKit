@@ -12,11 +12,16 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     private var peripheralManager: PeripheralManager?
     private var forcedDisconnect: Bool = false
 
-    var scanCompletion: ((MedtrumScanResult) -> Void)?
+    private var scanCompletion: ((MedtrumScanResult) -> Void)?
 
     private var attempt: ConnectAttempt?
 
+    // MUST NOT be called from within managerQueue - deadlock
     public var isConnected: Bool {
+        managerQueue.sync { isConnectedOnQueue }
+    }
+
+    private var isConnectedOnQueue: Bool {
         if let peripheral = peripheral, peripheral.state == .connected {
             return true
         }
@@ -36,7 +41,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         }
     }
 
-    func startScan(_ completion: @escaping (_ result: MedtrumScanResult) -> Void) {
+    private func startScan(_ completion: @escaping (_ result: MedtrumScanResult) -> Void) {
         if let pumpManager = self.pumpManager, pumpManager.state.pumpSN.isEmpty {
             completion(.failure(error: .noSerialNumberAvailable))
             return
@@ -69,7 +74,17 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         manager.connect(peripheral)
     }
 
-    /// Reports `attempt`, if nobody has yet. Safe to call from anywhere, as often as you like.
+    /// Hands a result to a caller. Never on the current thread: completions issue blocking BLE
+    /// writes: from the main thread that freezes the UI for up to 30s per packet (syncPumpTime
+    /// sends three), and from managerQueue - which every caller of this is now on - it would
+    /// deadlock outright, since that is the queue the response has to be delivered on.
+    private func report(_ error: MedtrumConnectError?, to completion: @escaping (MedtrumConnectError?) -> Void) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            completion(error)
+        }
+    }
+
+    /// Reports `attempt`, if nobody has yet. Must be called on `managerQueue`.
     private func finish(_ attempt: ConnectAttempt, _ error: MedtrumConnectError?) {
         guard attempt.claim() else {
             return
@@ -79,20 +94,19 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
             self.attempt = nil
         }
 
-        // Never on the caller's thread. Completions issue blocking BLE writes: from the main thread
-        // that freezes the UI for up to 30s per packet (syncPumpTime sends three), and from
-        // managerQueue it would deadlock outright - that is the queue the response has to be
-        // delivered on. Today the managerQueue callers only ever report an error, and every
-        // completion returns early on error before writing, but nothing enforces that.
-        DispatchQueue.global(qos: .userInitiated).async {
-            attempt.completion(error)
-        }
+        report(error, to: attempt.completion)
     }
 
     func ensureConnected(_ completion: @escaping (MedtrumConnectError?) -> Void) {
+        managerQueue.async {
+            self.ensureConnectedOnQueue(completion)
+        }
+    }
+
+    private func ensureConnectedOnQueue(_ completion: @escaping (MedtrumConnectError?) -> Void) {
         guard attempt == nil else {
             logger.error("EnsureConnected is already running...")
-            completion(.failedToConnectToDevice)
+            report(.failedToConnectToDevice, to: completion)
             return
         }
 
@@ -187,45 +201,52 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
                 return
             }
 
-            // The one condition that matters: is this still the attempt in flight? Covers being
-            // superseded by a re-arm, and waking a moment before cancellation landed.
-            guard let self, let attempt, self.attempt === attempt else {
+            guard let self else {
                 return
             }
 
-            // `Task.sleep` is frozen while iOS has the app suspended, so waking far past the budget
-            // means we were asleep for most of it rather than waiting on a pump that never answered
-            // - and we typically wake because the connection we were waiting for just arrived. Give
-            // the attempt the budget it never got instead of failing a connect that may be landing
-            // in this very instant. Bounded, so a phone that keeps suspending still terminates.
-            let elapsed = Date.now.timeIntervalSince(attempt.armedAt)
-            if elapsed > seconds * 2, attempt.remainingExtensions > 0 {
-                attempt.remainingExtensions -= 1
-                self.logger
-                    .warning(
-                        "Timeout woke after \(Int(elapsed))s of a \(Int(seconds))s budget - app was suspended, re-arming"
-                    )
-                self.armTimeout(attempt, seconds: seconds)
-                return
+            managerQueue.async { [weak self, weak attempt] in
+                // is this still the attempt in flight? Covers being superseded by a re-arm, and waking a moment before cancellation landed.
+                guard let self, let attempt, self.attempt === attempt else {
+                    return
+                }
+
+                // `Task.sleep` is frozen while iOS has the app suspended, so waking far past the budget
+                // means we were asleep for most of it rather than waiting on a pump that never answered
+                // - and we typically wake because the connection we were waiting for just arrived. Give
+                // the attempt the budget it never got instead of failing a connect that may be landing
+                // in this very instant. Bounded, so a phone that keeps suspending still terminates.
+                let elapsed = Date.now.timeIntervalSince(attempt.armedAt)
+                if elapsed > seconds * 2, attempt.remainingExtensions > 0 {
+                    attempt.remainingExtensions -= 1
+                    self.logger
+                        .warning(
+                            "Timeout woke after \(Int(elapsed))s of a \(Int(seconds))s budget - app was suspended, re-arming"
+                        )
+                    self.armTimeout(attempt, seconds: seconds)
+                    return
+                }
+
+                // Don't skip this just because the peripheral is connected by now: the link coming up
+                // is not the same as being ready, since auth, synchronize and subscribe still follow.
+                // Skipping would leave the attempt in flight with nothing to clear it, wedging every
+                // later ensureConnected. didConnect re-arms us on a longer budget.
+                self.logger.error("Failed to connect: Timeout reached...")
+
+                if self.manager.isScanning {
+                    self.manager.stopScan()
+                    self.scanCompletion = nil
+                }
+
+                self.finish(attempt, .failedToConnectToDevice)
             }
-
-            // Don't skip this just because the peripheral is connected by now: the link coming up
-            // is not the same as being ready, since auth, synchronize and subscribe still follow.
-            // Skipping would leave the attempt in flight with nothing to clear it, wedging every
-            // later ensureConnected. didConnect re-arms us on a longer budget.
-            self.logger.error("Failed to connect: Timeout reached...")
-
-            if self.manager.isScanning {
-                self.manager.stopScan()
-                self.scanCompletion = nil
-            }
-
-            self.finish(attempt, .failedToConnectToDevice)
         }
     }
 
     func write(_ packet: any MedtrumBasePacketProtocol) -> MedtrumWriteResult<Any> {
-        guard let peripheralManager else {
+        // Only the lookup is serialised. writePacket blocks for up to 30s waiting for a response
+        // that is delivered on managerQueue, so it must not be holding the queue while it waits.
+        guard let peripheralManager = managerQueue.sync(execute: { self.peripheralManager }) else {
             return .failure(error: .noManager)
         }
 
@@ -233,6 +254,12 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     }
 
     func disconnect(force: Bool = false) {
+        managerQueue.async {
+            self.disconnectOnQueue(force: force)
+        }
+    }
+
+    private func disconnectOnQueue(force: Bool) {
         forcedDisconnect = force
 
         if let peripheral, peripheral.state == .connected {
@@ -240,7 +267,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         }
 
         if force {
-            clearPeripheral()
+            clearPeripheralOnQueue()
         }
     }
 
@@ -248,6 +275,12 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     /// swapped for another one. It also drops the stored identifier, so the next connect has to
     /// find the base by scanning, which is fine: both of those are foreground activities.
     func clearPeripheral() {
+        managerQueue.async {
+            self.clearPeripheralOnQueue()
+        }
+    }
+
+    private func clearPeripheralOnQueue() {
         peripheral = nil
         peripheralManager = nil
 
@@ -292,8 +325,8 @@ extension BluetoothManager {
             return
         }
 
-        if !isConnected, pumpManager?.state.pumpState == .active {
-            ensureConnected { error in
+        if !isConnectedOnQueue, pumpManager?.state.pumpState == .active {
+            ensureConnectedOnQueue { error in
                 if let error = error {
                     self.logger.error("Failed to auto reconnect on boot: \(error)")
                 }
@@ -358,7 +391,7 @@ extension BluetoothManager {
         // .noManager, and nothing clears that until the link happens to drop on its own.
         guard let pumpManager = pumpManager else {
             logger.warning("No pumpManager...")
-            disconnect(force: true)
+            disconnectOnQueue(force: true)
             return
         }
 
@@ -394,7 +427,12 @@ extension BluetoothManager {
         }
 
         peripheralManager = PeripheralManager(peripheral, self, pumpManager) { [weak self] error in
-            self?.finish(attempt, error)
+            // Called from two queues: the CBPeripheralDelegate callbacks report discovery failures
+            // on managerQueue, while the auth flow runs on a global worker and reports from there.
+            // Land both on managerQueue, since that is where finish reads and clears the attempt.
+            self?.managerQueue.async {
+                self?.finish(attempt, error)
+            }
         }
 
         // The link is up but the flow is not done - auth, synchronize and subscribe still have to
@@ -446,7 +484,7 @@ extension BluetoothManager {
             finish(attempt, .failedToConnectToDevice)
 
         } else {
-            ensureConnected { error in
+            ensureConnectedOnQueue { error in
                 if let error = error {
                     self.logger.warning("Failed to auto-reconnect: \(error)")
                 }
