@@ -153,6 +153,28 @@ public class MedtrumPumpManager: DeviceManager {
         )
     }
     
+    private var mustProvideBLEHeartbeat = false
+    private var lastHeartbeat: Date = .distantPast
+
+    /// fired whenever the patch pushes a fresh state.
+    func issueHeartbeatIfNeeded() {
+        guard mustProvideBLEHeartbeat, Date.now.timeIntervalSince(lastHeartbeat) > .minutes(2) else {
+            return
+        }
+
+        lastHeartbeat = Date.now
+        log.info("Firing BLE heartbeat")
+
+        pumpDelegate.notify { delegate in
+            guard let delegate = delegate else {
+                self.log.error("Heartbeat fire could not be reported -> Missing delegate")
+                return
+            }
+
+            delegate.pumpManagerBLEHeartbeatDidFire(self)
+        }
+    }
+
     private let backgroundTask = BackgroundTask()
     @objc func appMovedToBackground() {
         if state.useSilentTones {
@@ -278,7 +300,9 @@ public extension MedtrumPumpManager {
         }
     }
 
-    func setMustProvideBLEHeartbeat(_: Bool) {}
+    func setMustProvideBLEHeartbeat(_ mustProvideBLEHeartbeat: Bool) {
+        self.mustProvideBLEHeartbeat = mustProvideBLEHeartbeat
+    }
 
     func createBolusProgressReporter(reportingOn: DispatchQueue) -> (any LoopKit.DoseProgressReporter)? {
         if let doseEntry = state.bolusDose {

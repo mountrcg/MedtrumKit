@@ -198,6 +198,8 @@ extension PeripheralManager {
             duringReconnect: duringReconnect,
             fullSync: fullSync
         )
+
+        pumpManager.issueHeartbeatIfNeeded()
     }
 }
 
