@@ -51,6 +51,11 @@ class MedtrumKitSettingsViewModel: PatchLifetimeFormatting, ObservableObject, Pu
     
     @Published var useSilentTones = false {
         didSet {
+            // prevent infinite loop: notifyStateDidChange() -> notify observers -> notify this view model -> set useSilentTones -> notifyStateDidChange() -> ...
+            guard pumpManager?.state.useSilentTones != useSilentTones else {
+                return
+            }
+
             pumpManager?.state.useSilentTones = useSilentTones
             pumpManager?.notifyStateDidChange()
         }
