@@ -156,9 +156,12 @@ public class MedtrumPumpManager: DeviceManager {
     private var mustProvideBLEHeartbeat = false
     private var lastHeartbeat: Date = .distantPast
 
-    /// fired whenever the patch pushes a fresh state.
+    private static let heartbeatInterval: TimeInterval = .minutes(1)
+
     func issueHeartbeatIfNeeded() {
-        guard mustProvideBLEHeartbeat, Date.now.timeIntervalSince(lastHeartbeat) > .minutes(2) else {
+        guard mustProvideBLEHeartbeat,
+              Date.now.timeIntervalSince(lastHeartbeat) > Self.heartbeatInterval
+        else {
             return
         }
 
