@@ -10,9 +10,7 @@ enum StateSyncer {
         duringReconnect: Bool,
         fullSync: Bool
     ) {
-        if fullSync {
-            pumpManager.state.lastSync = Date.now
-        }
+        let syncDate = Date.now
 
         StateSyncer.updatePumpState(syncResponse: syncResponse, pumpManager: pumpManager)
 
@@ -38,6 +36,7 @@ enum StateSyncer {
             }
         }
 
+        var events: [NewPumpEvent] = []
         if let basal = syncResponse.basal {
             switch basal.type {
             case .ABSOLUTE_TEMP,
@@ -67,14 +66,11 @@ enum StateSyncer {
                     state.basalDose = UnfinalizedDose(suspendStartTime: eventTime)
                     let basalDose = state.basalDose.toDoseEntry()
 
-                    var events: [NewPumpEvent] = [NewPumpEvent.suspend(dose: basalDose, date: basalDose.startDate)]
+                    events.append(NewPumpEvent.suspend(dose: basalDose, date: basalDose.startDate))
                     if dose.type == .tempBasal {
                         // Record finalized temp basal, resume/basal is already finalized
                         events.append(NewPumpEvent.tempBasal(dose: dose, date: dose.startDate))
                     }
-
-                    pumpManager.emitPumpEvents(events)
-                    pumpManager.notifyStateDidChange()
                 }
 
                 state.basalState = .suspended
@@ -95,18 +91,14 @@ enum StateSyncer {
                         )
 
                     let basalDose = state.basalDose.toDoseEntry(isMutable: true)
-                    var events: [NewPumpEvent] = [
-                        basalDose.type == .resume ?
+                    events.append(basalDose.type == .resume ?
                             NewPumpEvent.resume(dose: basalDose, date: basalDose.startDate) :
                             NewPumpEvent.basal(dose: basalDose, date: basalDose.startDate)
-                    ]
+                    )
                     if dose.type == .tempBasal {
                         // Record finalized temp basal, suspend is already finalized
                         events.append(NewPumpEvent.tempBasal(dose: dose, date: dose.startDate))
                     }
-
-                    pumpManager.emitPumpEvents(events)
-                    pumpManager.notifyStateDidChange()
                 }
 
                 state.basalState = .active
@@ -137,6 +129,11 @@ enum StateSyncer {
             )
         } else if duringReconnect {
             pumpManager.checkBolusDone()
+        }
+        
+        if fullSync || !events.isEmpty {
+            pumpManager.state.lastSync = syncDate
+            pumpManager.emitPumpEvents(events)
         }
 
         pumpManager.notifyStateDidChange()

@@ -426,7 +426,7 @@ public extension MedtrumPumpManager {
             events.append(
                 NewPumpEvent.bolus(
                     dose: dose,
-                    units: dose.deliveredUnits ?? 0,
+                    scheduledUnits: dose.programmedUnits,
                     date: dose.startDate
                 )
             )
@@ -997,7 +997,7 @@ public extension MedtrumPumpManager {
         events.append(
             NewPumpEvent.bolus(
                 dose: dose,
-                units: dose.programmedUnits,
+                scheduledUnits: dose.programmedUnits,
                 date: dose.startDate
             )
         )
@@ -1052,7 +1052,7 @@ public extension MedtrumPumpManager {
         events.append(
             NewPumpEvent.bolus(
                 dose: dose,
-                units: dose.programmedUnits,
+                scheduledUnits: dose.programmedUnits,
                 date: dose.startDate
             )
         )
