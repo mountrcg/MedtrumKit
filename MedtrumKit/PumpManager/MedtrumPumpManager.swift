@@ -178,6 +178,28 @@ public class MedtrumPumpManager: DeviceManager {
         }
     }
 
+    /// Fires the heartbeat unconditionally, past the one-minute limiter above. A scheduled wake exists for
+    /// no other purpose than to drive this cycle, and the limiter — which is there to thin out the reactive
+    /// heartbeats that incoming patch traffic produces — would swallow it.
+    ///
+    /// `pumpDelegate.notify` dispatches onto the delegate's own queue, so this is safe to call from
+    /// managerQueue: the host runs its cycle off-queue and cannot deadlock back into us.
+    func issueHeartbeatNow() {
+        guard mustProvideBLEHeartbeat else { return }
+
+        lastHeartbeat = Date.now
+        log.info("Firing BLE heartbeat (scheduled wake)")
+
+        pumpDelegate.notify { delegate in
+            guard let delegate = delegate else {
+                self.log.error("Heartbeat fire could not be reported -> Missing delegate")
+                return
+            }
+
+            delegate.pumpManagerBLEHeartbeatDidFire(self)
+        }
+    }
+
     private let backgroundTask = BackgroundTask()
     @objc func appMovedToBackground() {
         if state.useSilentTones {
@@ -219,9 +241,24 @@ public extension MedtrumPumpManager {
         )
     }
 
+    /// Tolerance sits above the host's loop period, so an ordinary cycle finds the data
+    /// fresh and does not pay for a sync.
+    ///
+    /// At 2.5 minutes against a 5-minute loop the check was stale on 86% of cycles, each
+    /// costing a p50 of 6.4 s of blocking BLE — measured over 7 h against an Omnipod pod
+    /// on the same phone, which paid it once in 70. `enactTempBasal` already refreshes
+    /// `lastSync` on success, the same way OmnipodKit's `store(doses:)` refreshes
+    /// `lastPumpDataReportDate`, so the loop's own commands keep the timestamp current
+    /// and the tolerance only has to span one loop period. Replaying the recorded event
+    /// timeline puts the sync rate at 17%.
+    ///
+    /// Safe because delivery is not learned here: `handleHeartbeat` runs every
+    /// notification through the same `StateSyncer.sync`, which raises suspend, resume and
+    /// temp-basal finalisation events and tracks bolus progress. Only `emitReservoirLevel`
+    /// is gated on `fullSync`; the low-reservoir alert is not.
     func ensureCurrentPumpData(completion: ((Date?) -> Void)?) {
         guard let activatedAt = state.patchActivatedAt,
-              Date.now.timeIntervalSince(state.lastSync) > .minutes(2.5) ||
+              Date.now.timeIntervalSince(state.lastSync) > .minutes(6) ||
               Date.now.timeIntervalSince(activatedAt) < .minutes(4)
         else {
             log
@@ -304,7 +341,24 @@ public extension MedtrumPumpManager {
     }
 
     func setMustProvideBLEHeartbeat(_ mustProvideBLEHeartbeat: Bool) {
-        self.mustProvideBLEHeartbeat = mustProvideBLEHeartbeat
+        // Bridge the legacy boolean through the scheduled path. Without a reading schedule the probe falls
+        // back to a fixed cadence.
+        setBLEHeartbeatRequest(
+            mustProvideBLEHeartbeat
+                ? PumpHeartbeatRequest(lastCGMReadingDate: nil, expectedCGMReadingInterval: .minutes(5))
+                : nil
+        )
+    }
+
+    /// The host tells us when the last CGM reading landed and how often readings are due, so the wake can
+    /// be scheduled to arrive just after the next one. Refreshed after every reading, which is what keeps
+    /// the cadence on the reading schedule rather than on whatever the patch happens to send.
+    func setBLEHeartbeatRequest(_ request: PumpHeartbeatRequest?) {
+        mustProvideBLEHeartbeat = request != nil
+        bluetooth.setHeartbeatRequest(
+            lastCGMReadingDate: request?.lastCGMReadingDate,
+            expectedCGMReadingInterval: request?.expectedCGMReadingInterval
+        )
     }
 
     func createBolusProgressReporter(reportingOn: DispatchQueue) -> (any LoopKit.DoseProgressReporter)? {

@@ -16,6 +16,60 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
 
     private var attempt: ConnectAttempt?
 
+    // MARK: - Pump-provided heartbeat (delayed-connect probe)
+
+    /// Buffer (seconds) added after the next expected CGM reading, so the reading has landed before the
+    /// wake drives a loop cycle.
+    private static var heartbeatBufferSeconds: TimeInterval {
+        (UserDefaults.standard.object(forKey: "MedtrumKit.heartbeatBufferSeconds") as? Double) ?? 20
+    }
+
+    /// Floor (seconds) for the computed StartDelay. An overdue target must not collapse to a near-zero
+    /// delay: that produces a tight wake loop which burns the background budget and gets the app
+    /// suspended for long stretches.
+    private static var heartbeatMinDelaySeconds: TimeInterval {
+        (UserDefaults.standard.object(forKey: "MedtrumKit.heartbeatMinDelaySeconds") as? Double) ?? 60
+    }
+
+    /// Backoff (seconds) before re-arming after a connect failure, so a failing probe doesn't spin.
+    private static var heartbeatFailureBackoffSeconds: TimeInterval {
+        (UserDefaults.standard.object(forKey: "MedtrumKit.heartbeatFailureBackoffSeconds") as? Double) ?? 30
+    }
+
+    /// Off by default, and measured to be the right default: the probe can only arm while the link is
+    /// down, and the link goes down about six times a day — under 5% of loop cycles. Covering the rest
+    /// needs a deliberate idle-disconnect, which MedtrumKit has no session concept to hang one on. The
+    /// silent-tones keep-alive already removes the throttling outright (20 ms vs 142 ms per cycle,
+    /// measured three hours apart on 2026-08-16), so this stays available to experiment with rather than
+    /// carrying its risk for a few percent. Off means the previous behaviour exactly: reconnect
+    /// immediately on every drop, never issue a StartDelay connect.
+    static var delayedConnectProbeEnabled: Bool {
+        (UserDefaults.standard.object(forKey: "MedtrumKit.delayedConnectProbeEnabled") as? Bool) ?? false
+    }
+
+    /// Set from `setBLEHeartbeatRequest`: the host wants the pump to provide the BLE heartbeat.
+    private var heartbeatEnabled = false
+    /// When the next wake should land — (lastCGMReading + expectedInterval + buffer).
+    private var heartbeatTargetDate: Date?
+    /// Reading interval last supplied, used to advance a chronically stale target.
+    private var heartbeatInterval: TimeInterval?
+    /// When the target was last refreshed, to tell a briefly-late reading from a target nobody updates.
+    private var heartbeatTargetSetAt: Date?
+    /// True while a StartDelay connect is in flight, so we don't stack probes.
+    private var delayedProbeInFlight = false
+    /// Set when a scheduled wake connected: the link is dropped again straight away and the heartbeat is
+    /// fired from the disconnect handler, so the loop cycle runs with the radio idle and the next wake
+    /// already armed. Its commands then connect on demand instead of fighting the probe's link.
+    private var pendingHeartbeatFire = false
+
+    /// The probe needs a DISCONNECTED peripheral: CoreBluetooth only honours the start delay on a fresh
+    /// connect. While the link is up the app has no scheduled wake at all — it runs only when the patch
+    /// happens to send something, which is what leaves every loop cycle to start in a freshly resumed,
+    /// background-throttled process.
+    private var delayedProbeUsable: Bool {
+        BluetoothManager.delayedConnectProbeEnabled && heartbeatEnabled && attempt == nil
+    }
+
     // MUST NOT be called from within managerQueue - deadlock
     public var isConnected: Bool {
         managerQueue.sync { isConnectedOnQueue }
@@ -100,6 +154,96 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         }
     }
 
+    /// Enable and schedule the pump-provided heartbeat. Driven by `PumpManager.setBLEHeartbeatRequest`,
+    /// i.e. refreshed after every CGM reading, so the wake cadence tracks the actual reading schedule.
+    /// `expectedCGMReadingInterval == nil` disables it and restores plain connect-on-demand.
+    ///
+    /// Refreshing the target while a probe is in flight does not churn it — the in-flight probe completes
+    /// and the next one picks up the new target.
+    func setHeartbeatRequest(lastCGMReadingDate: Date?, expectedCGMReadingInterval: TimeInterval?) {
+        managerQueue.async {
+            if let interval = expectedCGMReadingInterval {
+                let base = lastCGMReadingDate ?? Date()
+                self.heartbeatTargetDate = base
+                    .addingTimeInterval(interval + BluetoothManager.heartbeatBufferSeconds)
+                self.heartbeatInterval = interval
+                self.heartbeatTargetSetAt = Date()
+                self.heartbeatEnabled = true
+            } else {
+                self.heartbeatTargetDate = nil
+                self.heartbeatInterval = nil
+                self.heartbeatTargetSetAt = nil
+                self.heartbeatEnabled = false
+            }
+
+            let targetDesc = self.heartbeatTargetDate.map { String(format: "%.0fs", $0.timeIntervalSinceNow) } ?? "-"
+            self.logger.info("[heartbeat] enabled=\(self.heartbeatEnabled) targetIn=\(targetDesc)")
+
+            if self.heartbeatEnabled {
+                self.issueDelayedConnectProbe()
+            }
+        }
+    }
+
+    /// Issue a connect carrying `CBConnectPeripheralOptionStartDelayKey`, so iOS itself wakes the app when
+    /// the delay elapses. This is the only scheduled wake the driver has: it holds no timers, and a timer
+    /// would not survive suspension anyway. Background-only — iOS ignores the delay in the foreground, where
+    /// the app is not being throttled and does not need it.
+    ///
+    /// Returns whether a probe was actually issued, so a caller that skipped the immediate reconnect can
+    /// fall back to it rather than leave the link down with nothing scheduled.
+    ///
+    /// Must be called on `managerQueue`.
+    @discardableResult
+    private func issueDelayedConnectProbe() -> Bool {
+        guard delayedProbeUsable, !delayedProbeInFlight else { return false }
+        guard let peripheral = peripheral ?? knownPeripheralOnQueue() else { return false }
+        guard peripheral.state == .disconnected else { return false }
+
+        // A target nobody refreshes goes chronically overdue and every probe then collapses onto the floor,
+        // which is exactly the tight wake loop the floor exists to prevent. Advance it by whole reading
+        // intervals instead. A host that refreshes every reading never reaches this.
+        if let interval = heartbeatInterval, interval > 0,
+           let setAt = heartbeatTargetSetAt, Date().timeIntervalSince(setAt) > interval * 1.5,
+           var advanced = heartbeatTargetDate, advanced <= Date()
+        {
+            let now = Date()
+            while advanced <= now { advanced.addTimeInterval(interval) }
+            heartbeatTargetDate = advanced
+        }
+
+        let target = heartbeatTargetDate ?? Date().addingTimeInterval(BluetoothManager.heartbeatMinDelaySeconds)
+        // The option takes an INTEGER number of seconds; a fractional NSNumber is rejected outright with
+        // CBErrorDomain Code=1, which together with the failure re-arm would spin.
+        let delaySeconds = max(
+            Int(BluetoothManager.heartbeatMinDelaySeconds),
+            Int(target.timeIntervalSinceNow.rounded())
+        )
+
+        if manager.isScanning {
+            manager.stopScan()
+            scanCompletion = nil
+        }
+
+        self.peripheral = peripheral
+        delayedProbeInFlight = true
+        logger.info("[heartbeat] issuing connect with StartDelay=\(delaySeconds)s")
+        manager.connect(peripheral, options: [CBConnectPeripheralOptionStartDelayKey: NSNumber(value: delaySeconds)])
+        return true
+    }
+
+    /// The peripheral we are paired with, without scanning. Mirrors the retrieve path in
+    /// `ensureConnectedOnQueue` — a scan only ever discovers anything in the foreground.
+    private func knownPeripheralOnQueue() -> CBPeripheral? {
+        guard manager?.state == .poweredOn,
+              let identifier = pumpManager?.state.peripheralIdentifier
+        else {
+            return nil
+        }
+
+        return manager.retrievePeripherals(withIdentifiers: [identifier]).first
+    }
+
     func ensureConnected(_ completion: @escaping (MedtrumConnectError?) -> Void) {
         managerQueue.async {
             self.ensureConnectedOnQueue(completion)
@@ -119,6 +263,9 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
 
         let attempt = ConnectAttempt(completion)
         self.attempt = attempt
+        // A real command supersedes any pending scheduled wake: its connect carries no start delay, and
+        // leaving the flag set would block every later probe.
+        delayedProbeInFlight = false
 
         if let peripheral = peripheral, peripheral.state == .connected {
             logger.debug("Already connect!")
@@ -402,6 +549,20 @@ extension BluetoothManager {
             return
         }
 
+        // A scheduled wake, with nobody waiting on the link. Its only job is to get the app running for a
+        // loop cycle, so drop it again immediately rather than authorising and subscribing: the disconnect
+        // handler fires the heartbeat and re-arms the next wake, and the loop's own commands take the link
+        // through ensureConnected. Holding this link instead would put us right back where we started —
+        // connected, idle, and never scheduled.
+        if delayedProbeInFlight, attempt == nil {
+            logger.info("[heartbeat] scheduled wake connected - dropping link, firing heartbeat")
+            delayedProbeInFlight = false
+            pendingHeartbeatFire = true
+            self.peripheral = peripheral
+            manager.cancelPeripheralConnection(peripheral)
+            return
+        }
+
         // The attempt this belongs to already gave up - typically its deadline fired while the app
         // was suspended, in the same instant the link finally came up. Do not throw the connection
         // away: reconnecting to a known peripheral is the only thing that works while backgrounded,
@@ -424,6 +585,9 @@ extension BluetoothManager {
         }
 
         forcedDisconnect = false
+        // Whatever brought the link up, the scheduled wake has been consumed. The next one is armed on
+        // disconnect, once this connection's work is done.
+        delayedProbeInFlight = false
 
         self.peripheral = peripheral
         // Remember what to reconnect to. Only identifiers that actually produced a connection get
@@ -477,6 +641,10 @@ extension BluetoothManager {
             return
         }
 
+        // Clear before anything can arm a new probe: a flag left over from a connect that never landed
+        // would silently block the re-arm, and the guard inside issueDelayedConnectProbe gives no signal.
+        delayedProbeInFlight = false
+
         if let pumpManager = self.pumpManager {
             pumpManager.state.isConnected = false
             pumpManager.notifyStateDidChange()
@@ -489,13 +657,23 @@ extension BluetoothManager {
 
         if let attempt = attempt {
             finish(attempt, .failedToConnectToDevice)
-
-        } else {
+        } else if !(delayedProbeUsable && issueDelayedConnectProbe()) {
+            // Nobody is waiting on the link and no wake could be armed. Reconnecting right back is what
+            // leaves the app holding a live but idle connection — iOS then has no reason to schedule it,
+            // so the next loop cycle starts in a freshly resumed, throttled process. But an unarmed link
+            // that nobody reconnects is worse: it stays down until some command happens to need it.
             ensureConnectedOnQueue { error in
                 if let error = error {
                     self.logger.warning("Failed to auto-reconnect: \(error)")
                 }
             }
+        }
+
+        // A scheduled wake ends here, not at didConnect: the link is down again and the next wake is
+        // already armed, so the loop cycle runs with the radio idle and its commands connect on demand.
+        if pendingHeartbeatFire {
+            pendingHeartbeatFire = false
+            pumpManager?.issueHeartbeatNow()
         }
     }
 
@@ -514,6 +692,15 @@ extension BluetoothManager {
         // out the full budget for a failure we already know about.
         if let attempt = attempt {
             finish(attempt, .failedToConnectToDevice)
+        }
+
+        // Re-arm the scheduled wake, but not immediately: a probe that fails and re-arms at once spins.
+        if delayedProbeInFlight {
+            delayedProbeInFlight = false
+            let backoff = BluetoothManager.heartbeatFailureBackoffSeconds
+            managerQueue.asyncAfter(deadline: .now() + backoff) { [weak self] in
+                self?.issueDelayedConnectProbe()
+            }
         }
     }
 }

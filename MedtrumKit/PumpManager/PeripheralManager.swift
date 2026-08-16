@@ -377,7 +377,11 @@ extension PeripheralManager: CBPeripheralDelegate {
         var packet = NotificationPacket()
         packet.decode(data)
 
-        guard Date.now.timeIntervalSince(pumpManager.state.lastSync) > .minutes(2.5) else {
+        // Same tolerance as `ensureCurrentPumpData`, for the same reason: it has to span one loop period,
+        // otherwise an ordinary cycle finds the data stale and pays for a sync it does not need. At 2.5
+        // minutes this gate opened on nearly every heartbeat once a loop period had passed, so the full
+        // sync the loop-facing check was widened to avoid came back in through the notification path.
+        guard Date.now.timeIntervalSince(pumpManager.state.lastSync) > .minutes(6) else {
             parseStateUpdate(packet.parseResponse(), duringReconnect: false, fullSync: false)
             return
         }
