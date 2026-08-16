@@ -28,6 +28,11 @@ class PeripheralManager: NSObject {
 
     private let semaphore = DispatchSemaphore(value: 1)
 
+    /// How long a caller waits for the link before giving up. Deliberately longer than the
+    /// exchange timeout in `writePacket`, so one stuck command is waited out and the caller
+    /// behind it is not.
+    private static let linkWaitTimeoutSeconds = 40
+
     public init(
         _ peripheral: CBPeripheral,
         _ bluetoothManager: BluetoothManager,
@@ -56,13 +61,30 @@ class PeripheralManager: NSObject {
         queue?.leave()
     }
 
+    /// Sends one packet and blocks the caller until its response arrives, or fails.
+    ///
+    /// Two waits, and both have to be bounded. The inner one covers the exchange itself; the
+    /// outer one is the queue for the link, which carries a single command at a time because
+    /// the protocol keys responses to one `currentSequence`.
+    ///
+    /// Bounding the outer wait is what keeps a bad link from going *quiet*. Every caller here
+    /// sits on the loop's path — `ensureCurrentPumpData` and every dosing command — and
+    /// `trio.aps.loop.notActive` is raised from inside the loop cycle, so a cycle parked here
+    /// suppresses the alert that exists to report the stall. On 2026-08-14 five cycles queued
+    /// behind one dead patch and drained together after 898 s; Trio raised nothing for the 18
+    /// minutes in between. Failing the caller instead lets its cycle finish and alert.
     func writePacket(_ packet: any MedtrumBasePacketProtocol) -> MedtrumWriteResult<Any> {
         guard let characteristic = writeCharacteristic else {
             log.error("No write characteristic found... Device might be disconnected...")
             return .failure(error: .noWriteCharacteristic)
         }
 
-        semaphore.wait()
+        // returning before the `defer` below is what keeps this correct: a caller that never
+        // took the token must not signal one
+        guard semaphore.wait(timeout: .now() + .seconds(Self.linkWaitTimeoutSeconds)) == .success else {
+            log.warning("Link still busy after \(Self.linkWaitTimeoutSeconds)s, giving up on this command")
+            return .failure(error: .alreadyRunning)
+        }
         defer {
             semaphore.signal()
         }
