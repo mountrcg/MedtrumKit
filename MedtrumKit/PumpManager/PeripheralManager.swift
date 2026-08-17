@@ -28,6 +28,20 @@ class PeripheralManager: NSObject {
 
     private let semaphore = DispatchSemaphore(value: 1)
 
+    /// Where the idle-disconnect timer runs. OmnipodKit hangs idle detection on its session queue;
+    /// MedtrumKit has no session concept, so the equivalent is the `writePacket` semaphore plus the
+    /// counter below — `activeCommands == 0` is this driver's `sessionQueue.operationCount == 0`.
+    private let queue = DispatchQueue(label: "com.nightscout.MedtrumKit.peripheralManagerQueue", qos: .utility)
+
+    /* access must be serialized with idleLock */
+    private let idleLock = NSLock()
+    /// Callers currently inside `writePacket`, whether waiting on the link or holding it.
+    private var activeCommands = 0
+    /// When the last command finished with nothing behind it. Reset by the next command, so a burst
+    /// disconnects only after its last member.
+    private var idleStart: Date?
+    /* end */
+
     /// How long a caller waits for the link before giving up. Deliberately longer than the
     /// exchange timeout in `writePacket`, so one stuck command is waited out and the caller
     /// behind it is not.
@@ -78,6 +92,13 @@ class PeripheralManager: NSObject {
             log.error("No write characteristic found... Device might be disconnected...")
             return .failure(error: .noWriteCharacteristic)
         }
+
+        // Counted before the link wait, so a caller queued behind a running command still keeps the
+        // connection off the idle path — the burst shares one connection, as in OmnipodKit.
+        idleLock.lock()
+        activeCommands += 1
+        idleLock.unlock()
+        defer { commandDidFinish() }
 
         // returning before the `defer` below is what keeps this correct: a caller that never
         // took the token must not signal one
@@ -388,6 +409,55 @@ extension PeripheralManager: CBPeripheralDelegate {
 
         // Outside the lock, and last: this hands writePacket the fields we just finished with.
         writeCallback.leave()
+    }
+
+    /// Marks a command done and, if it was the last one, starts the idle countdown.
+    private func commandDidFinish() {
+        idleLock.lock()
+        activeCommands -= 1
+        let idle = activeCommands == 0
+        if idle {
+            idleStart = Date()
+        }
+        idleLock.unlock()
+
+        if idle {
+            scheduleIdleDisconnectIfNeeded()
+        }
+    }
+
+    /// Connect-on-demand: once the commands stop, drop the link so the patch is left "normally
+    /// disconnected" between cycles and the StartDelay probe has something to arm against.
+    ///
+    /// The delay is kept SHORT (see `BluetoothManager.idleDisconnectSeconds`) so a background wake cycle
+    /// disconnects before iOS suspends the app — a suspended app freezes this timer, and OmnipodKit
+    /// measured a ~12 min missed loop when the link was still up at that point. A command burst shares one
+    /// connection: each command resets `idleStart`, so this only lands after the last of them.
+    private func scheduleIdleDisconnectIfNeeded() {
+        guard BluetoothManager.connectOnDemandEnabled else { return }
+        let idleDelay = BluetoothManager.idleDisconnectSeconds
+        idleLock.lock()
+        let idleAt = idleStart
+        idleLock.unlock()
+
+        queue.asyncAfter(deadline: .now() + idleDelay) { [weak self] in
+            guard let self = self, BluetoothManager.connectOnDemandEnabled else { return }
+
+            // Foreground holds the link: the UI wants it, and iOS ignores the start delay there anyway.
+            if self.bluetoothManager.shouldHoldConnection {
+                self.log.debug("[connectOnDemand] holding connection (foreground) - skip idle-disconnect")
+                return
+            }
+
+            // Only disconnect if we are still idle (no newer command) and nothing is queued or running.
+            self.idleLock.lock()
+            let stillIdle = self.idleStart == idleAt && self.activeCommands == 0
+            self.idleLock.unlock()
+            guard stillIdle, self.peripheral.state == .connected else { return }
+
+            self.log.info("[connectOnDemand] idle ~\(Int(idleDelay))s, no queued command -> disconnecting")
+            self.bluetoothManager.disconnectOnDemand()
+        }
     }
 
     private func handleHeartbeat(data: Data) {

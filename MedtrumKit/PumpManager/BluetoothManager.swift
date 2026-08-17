@@ -1,4 +1,5 @@
 import CoreBluetooth
+import UIKit
 
 class BluetoothManager: NSObject, CBCentralManagerDelegate {
     public var pumpManager: MedtrumPumpManager?
@@ -47,6 +48,38 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         (UserDefaults.standard.object(forKey: "MedtrumKit.delayedConnectProbeEnabled") as? Bool) ?? false
     }
 
+    /// Drop the link a few seconds after the last command, so the probe has something to arm against.
+    /// Off by default; the probe alone only covers the involuntary drops, which is under 5% of cycles.
+    ///
+    /// Ported from OmnipodKit, where the pair has been in production against the same host and the same
+    /// iOS behaviour. Kept deliberately close to it — names, defaults and structure — so the two can be
+    /// reviewed against each other.
+    static var connectOnDemandEnabled: Bool {
+        (UserDefaults.standard.object(forKey: "MedtrumKit.connectOnDemandEnabled") as? Bool) ?? false
+    }
+
+    /// Idle-disconnect delay (seconds) after the last command. Kept SHORT so a background wake cycle
+    /// disconnects promptly — before iOS suspends the app — which lets the StartDelay probe re-arm (it
+    /// needs a DISCONNECTED patch). OmnipodKit measured the failure mode of a long delay: the app
+    /// suspended with the link still up and the timer frozen, so the probe never re-armed and a loop was
+    /// missed for ~12 min. A command burst still shares one connection: each command resets `idleStart`,
+    /// so the disconnect lands this many seconds after the LAST one.
+    static var idleDisconnectSeconds: TimeInterval {
+        (UserDefaults.standard.object(forKey: "MedtrumKit.idleDisconnectSeconds") as? Double) ?? 4
+    }
+
+    /// True while the app is in the foreground. Set from the lifecycle notifications, read from
+    /// `managerQueue` and cross-queue by PeripheralManager — a benign bool race, as in OmnipodKit.
+    private var isAppForeground = true
+
+    /// Hold the link rather than dropping it to idle. Foreground only: the UI wants the patch connected,
+    /// and `CBConnectPeripheralOptionStartDelayKey` is a background-only mechanism — iOS ignores the delay
+    /// while the app is foreground, so a foreground probe connects at once, is taken for a wake,
+    /// disconnects, re-arms and churns.
+    var shouldHoldConnection: Bool {
+        isAppForeground
+    }
+
     /// Set from `setBLEHeartbeatRequest`: the host wants the pump to provide the BLE heartbeat.
     private var heartbeatEnabled = false
     /// When the next wake should land — (lastCGMReading + expectedInterval + buffer).
@@ -68,6 +101,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     /// background-throttled process.
     private var delayedProbeUsable: Bool {
         BluetoothManager.delayedConnectProbeEnabled && heartbeatEnabled && attempt == nil
+            && !shouldHoldConnection
     }
 
     // MUST NOT be called from within managerQueue - deadlock
@@ -93,6 +127,25 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
                 options: [CBCentralManagerOptionRestoreIdentifierKey: "com.nightscout.MedtrumKit.bluetoothManager"]
             )
         }
+
+        for (name, foreground) in [
+            (UIApplication.didBecomeActiveNotification, true),
+            (UIApplication.didEnterBackgroundNotification, false)
+        ] {
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: nil) { [weak self] _ in
+                self?.managerQueue.async { self?.isAppForeground = foreground }
+            }
+        }
+    }
+
+    /// Drop the link between commands, leaving the patch "normally disconnected" so the StartDelay probe
+    /// can arm against it.
+    ///
+    /// Routed through `managerQueue` on purpose: OmnipodKit found that cancelling from the
+    /// PeripheralManager queue raced CoreBluetooth's teardown and wedged the next connect. `force` stays
+    /// false so `didDisconnect` runs its arming path rather than returning early on `forcedDisconnect`.
+    func disconnectOnDemand() {
+        disconnect(force: false)
     }
 
     private func startScan(_ completion: @escaping (_ result: MedtrumScanResult) -> Void) {
