@@ -32,8 +32,14 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         (UserDefaults.standard.object(forKey: "MedtrumKit.heartbeatMinDelaySeconds") as? Double) ?? 60
     }
 
+    /// How far before its target a probe may land and still count as the scheduled wake. Anything
+    /// earlier means the start delay was not honoured at all, not that it fired a little briskly.
+    private static var probeEarlyToleranceSeconds: TimeInterval {
+        (UserDefaults.standard.object(forKey: "MedtrumKit.probeEarlyToleranceSeconds") as? Double) ?? 30
+    }
+
     /// Backoff (seconds) before re-arming after a connect failure, so a failing probe doesn't spin.
-    private static var heartbeatFailureBackoffSeconds: TimeInterval {
+    static var heartbeatFailureBackoffSeconds: TimeInterval {
         (UserDefaults.standard.object(forKey: "MedtrumKit.heartbeatFailureBackoffSeconds") as? Double) ?? 30
     }
 
@@ -104,6 +110,10 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     private var heartbeatTargetSetAt: Date?
     /// True while a StartDelay connect is in flight, so we don't stack probes.
     private var delayedProbeInFlight = false
+    /// When the in-flight probe is actually due, so a connect that lands early can be told from a wake.
+    private var delayedProbeDueAt: Date?
+    /// Set after a probe landed early; re-arming is held off until then so the two cannot chase each other.
+    private var probeSuppressedUntil: Date?
     /// Set when a scheduled wake connected: the link is dropped again straight away and the heartbeat is
     /// fired from the disconnect handler, so the loop cycle runs with the radio idle and the next wake
     /// already armed. Its commands then connect on demand instead of fighting the probe's link.
@@ -264,6 +274,8 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     @discardableResult
     private func issueDelayedConnectProbe() -> Bool {
         guard delayedProbeUsable, !delayedProbeInFlight else { return false }
+        if let until = probeSuppressedUntil, Date() < until { return false }
+        probeSuppressedUntil = nil
         guard let peripheral = peripheral ?? knownPeripheralOnQueue() else { return false }
         guard peripheral.state == .disconnected else { return false }
 
@@ -294,7 +306,13 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
 
         self.peripheral = peripheral
         delayedProbeInFlight = true
+        delayedProbeDueAt = Date().addingTimeInterval(TimeInterval(delaySeconds))
         logger.info("[heartbeat] issuing connect with StartDelay=\(delaySeconds)s")
+        // Clear any outstanding connect first: CoreBluetooth ignores the start delay when one is already
+        // pending for this peripheral, so the probe would land at once instead of at the target. Observed
+        // on 2026-08-17 07:55:42 — a connect-on-demand from the loop cycle was still outstanding, the
+        // re-arm resolved immediately, and it ran a second loop cycle 31 s after the first.
+        manager.cancelPeripheralConnection(peripheral)
         manager.connect(peripheral, options: [CBConnectPeripheralOptionStartDelayKey: NSNumber(value: delaySeconds)])
         return true
     }
@@ -622,10 +640,25 @@ extension BluetoothManager {
         // through ensureConnected. Holding this link instead would put us right back where we started —
         // connected, idle, and never scheduled.
         if delayedProbeInFlight, attempt == nil {
-            logger.info("[heartbeat] scheduled wake connected - dropping link, firing heartbeat")
+            let secondsEarly = delayedProbeDueAt?.timeIntervalSinceNow ?? 0
             delayedProbeInFlight = false
-            pendingHeartbeatFire = true
+            delayedProbeDueAt = nil
             self.peripheral = peripheral
+
+            // A connect that lands well before its target was never scheduled — the start delay was
+            // ignored. Treating it as a wake runs a loop cycle early and re-arms into the same state,
+            // so drop the link and hold off re-arming instead of chasing it.
+            if secondsEarly > BluetoothManager.probeEarlyToleranceSeconds {
+                logger
+                    .warning(
+                        "[heartbeat] probe landed \(Int(secondsEarly))s early - not a wake, holding off re-arm"
+                    )
+                probeSuppressedUntil = Date().addingTimeInterval(BluetoothManager.heartbeatFailureBackoffSeconds)
+            } else {
+                logger.info("[heartbeat] scheduled wake connected - dropping link, firing heartbeat")
+                pendingHeartbeatFire = true
+            }
+
             manager.cancelPeripheralConnection(peripheral)
             return
         }
