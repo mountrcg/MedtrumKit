@@ -24,8 +24,9 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         managerQueue.sync { isConnectedOnQueue }
     }
 
+    /// a live link alone is not yet a usable session
     private var isConnectedOnQueue: Bool {
-        if let peripheral = peripheral, peripheral.state == .connected {
+        if let peripheral = peripheral, peripheral.state == .connected, peripheralManager?.isReady == true {
             return true
         }
 
@@ -80,6 +81,22 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         manager.connect(peripheral)
     }
 
+    /// anything that mutates connection state must check this.
+    private func isCurrent(_ candidate: CBPeripheral) -> Bool {
+        candidate.identifier == peripheral?.identifier
+    }
+
+    /// Disconnects only if `manager` is still the one driving the link
+    func disconnect(ifCurrent candidate: PeripheralManager) {
+        managerQueue.async {
+            guard self.peripheralManager === candidate else {
+                return
+            }
+
+            self.disconnectOnQueue(force: false)
+        }
+    }
+
     /// Hands a result to a caller. Never on the current thread: completions issue blocking BLE
     /// writes: from the main thread that freezes the UI for up to 30s per packet (syncPumpTime
     /// sends three), and from managerQueue - which every caller of this is now on - it would
@@ -105,6 +122,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
             reconnectAttempts = 0
             reconnectTask?.cancel()
             reconnectTask = nil
+            rememberPeripheral()
         } else {
             scheduleReconnect()
         }
@@ -112,6 +130,15 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         for completion in attempt.completions {
             report(error, to: completion)
         }
+    }
+
+    private func rememberPeripheral() {
+        guard let pumpManager, let peripheral, pumpManager.state.peripheralIdentifier != peripheral.identifier else {
+            return
+        }
+
+        pumpManager.state.peripheralIdentifier = peripheral.identifier
+        pumpManager.notifyStateDidChange()
     }
 
     /// Must be called on `managerQueue`.
@@ -179,9 +206,16 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         let attempt = ConnectAttempt(completion)
         self.attempt = attempt
 
-        if let peripheral = peripheral, peripheral.state == .connected {
+        if isConnectedOnQueue {
             logger.debug("Already connect!")
             finish(attempt, nil)
+            return
+        }
+
+        if let peripheral = peripheral, peripheral.state == .connected {
+            logger.warning("Connected but the session is not ready, dropping the link to rebuild it")
+            startTimeout(attempt, seconds: .seconds(15))
+            manager.cancelPeripheralConnection(peripheral)
             return
         }
 
@@ -326,7 +360,10 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     }
 
     private func disconnectOnQueue(force: Bool) {
-        forcedDisconnect = force
+        // forcedDisconnect is set to true only here, normal disconnects should not abort the force disconnect
+        if force {
+            forcedDisconnect = true
+        }
 
         // both .connected AND .connecting
         if let peripheral, peripheral.state != .disconnected {
@@ -352,6 +389,8 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
             manager.stopScan()
         }
         scanCompletion = nil
+
+        pumpManager?.state.isConnected = false
 
         peripheral = nil
         // didDisconnectPeripheral returns early on a forced disconnect, so this is the only place
@@ -428,26 +467,31 @@ extension BluetoothManager {
             return
         }
 
-        let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey]
-        guard let manufacturerData = manufacturerData as? Data, manufacturerData.count >= 7 else {
-            // Simulator bypass -> 200u
-            scanCompletion?(
-                .success(
-                    peripheral: peripheral,
-                    pumpSN: Data([0x28, 0xD8, 0x12, 0x4A]),
-                    deviceType: 1,
-                    version: 1
+        let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data
+        guard let manufacturerData, manufacturerData.count >= 8 else {
+            #if targetEnvironment(simulator)
+                // Simulator bypass -> 200u
+                scanCompletion?(
+                    .success(
+                        peripheral: peripheral,
+                        pumpSN: Data([0x28, 0xD8, 0x12, 0x4A]),
+                        deviceType: 1,
+                        version: 1
+                    )
                 )
-            )
-            // Simulator bypass -> 300u
-            scanCompletion?(
-                .success(
-                    peripheral: peripheral,
-                    pumpSN: Data([0x14, 0x16, 0xDF, 0x52]),
-                    deviceType: 1,
-                    version: 1
+                // Simulator bypass -> 300u
+                scanCompletion?(
+                    .success(
+                        peripheral: peripheral,
+                        pumpSN: Data([0x14, 0x16, 0xDF, 0x52]),
+                        deviceType: 1,
+                        version: 1
+                    )
                 )
-            )
+            #else
+                // On device this is some other peripheral calling itself MT, not a pump.
+                logger.debug("Ignoring MT advertisement with \(manufacturerData?.count ?? 0) bytes of manufacturer data")
+            #endif
             return
         }
 
@@ -472,6 +516,19 @@ extension BluetoothManager {
         if forcedDisconnect {
             logger.info("Dropping a connection that landed after a forced disconnect")
             central.cancelPeripheralConnection(peripheral)
+            return
+        }
+
+        guard isCurrent(peripheral) else {
+            logger.info("Dropping a connection for a peripheral we are not driving")
+            central.cancelPeripheralConnection(peripheral)
+            return
+        }
+
+        // A real reconnect passes through didDisconnect first, which cleans the manager up - so a
+        // ready session here means this callback is a duplicate.
+        if peripheralManager?.isReady == true {
+            logger.info("Ignoring duplicate didConnect - session already established")
             return
         }
 
@@ -509,13 +566,8 @@ extension BluetoothManager {
         forcedDisconnect = false
 
         self.peripheral = peripheral
-        // Remember what to reconnect to. Only identifiers that actually produced a connection get
-        // stored, and it survives an app restart, so the scan path is only ever needed for pairing.
-        if pumpManager.state.peripheralIdentifier != peripheral.identifier {
-            pumpManager.state.peripheralIdentifier = peripheral.identifier
-            pumpManager.notifyStateDidChange()
-        }
 
+        peripheralManager?.cleanup()
         peripheralManager = PeripheralManager(peripheral, self, pumpManager) { [weak self] error in
             // Called from two queues: the CBPeripheralDelegate callbacks report discovery failures
             // on managerQueue, while the auth flow runs on a global worker and reports from there.
@@ -555,6 +607,11 @@ extension BluetoothManager {
                 "Device disconnected, name: \(peripheral.name ?? "<NO_NAME>"), error: \(error?.localizedDescription ?? "No error")"
             )
 
+        guard isCurrent(peripheral) else {
+            logger.info("Ignoring disconnect for a peripheral we are not driving")
+            return
+        }
+
         if forcedDisconnect {
             forcedDisconnect = false
             return
@@ -583,6 +640,11 @@ extension BluetoothManager {
             .info(
                 "Device connect error, name: \(peripheral.name ?? "<NO_NAME>"), error: \(error?.localizedDescription ?? "No error")"
             )
+
+        guard isCurrent(peripheral) else {
+            logger.info("Ignoring connect error for a peripheral we are not driving")
+            return
+        }
 
         if let pumpManager = self.pumpManager {
             pumpManager.state.isConnected = false
