@@ -418,7 +418,8 @@ extension PeripheralManager: CBPeripheralDelegate {
     /// Deliberately takes no payload: the decision needs only the age of the last full sync, so it
     /// can be made for *every* notification rather than only the ones that carry low-byte fields.
     private func considerFullSync() {
-        guard Date.now.timeIntervalSince(pumpManager.state.lastSync) > .minutes(2.5) else {
+        let age = Date.now.timeIntervalSince(pumpManager.state.lastSync)
+        guard age > MedtrumPumpManager.heartbeatSyncFreshnessInterval else {
             return
         }
 
