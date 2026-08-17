@@ -37,25 +37,40 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         (UserDefaults.standard.object(forKey: "MedtrumKit.heartbeatFailureBackoffSeconds") as? Double) ?? 30
     }
 
-    /// Off by default, and measured to be the right default: the probe can only arm while the link is
-    /// down, and the link goes down about six times a day — under 5% of loop cycles. Covering the rest
-    /// needs a deliberate idle-disconnect, which MedtrumKit has no session concept to hang one on. The
-    /// silent-tones keep-alive already removes the throttling outright (20 ms vs 142 ms per cycle,
-    /// measured three hours apart on 2026-08-16), so this stays available to experiment with rather than
-    /// carrying its risk for a few percent. Off means the previous behaviour exactly: reconnect
-    /// immediately on every drop, never issue a StartDelay connect.
-    static var delayedConnectProbeEnabled: Bool {
-        (UserDefaults.standard.object(forKey: "MedtrumKit.delayedConnectProbeEnabled") as? Bool) ?? false
+    /// Wake the app just after the next expected reading, so the loop cycle does not start in a freshly
+    /// resumed, throttled process. Follows `useSilentTones` being off — see `keepAliveIsScheduledWake`.
+    ///
+    /// `MedtrumKit.delayedConnectProbeEnabled` overrides in either direction and is the kill switch:
+    /// false restores the previous behaviour exactly — reconnect immediately on every drop, never issue
+    /// a StartDelay connect.
+    var delayedConnectProbeEnabled: Bool {
+        if let override = UserDefaults.standard.object(forKey: "MedtrumKit.delayedConnectProbeEnabled") as? Bool {
+            return override
+        }
+        return keepAliveIsScheduledWake
+    }
+
+    /// Which keep-alive is in play. The silent-tones session and the scheduled wake solve the same
+    /// problem — keeping the loop off a throttled, freshly-resumed process — so exactly one runs:
+    /// `useSilentTones` on holds the app up through the audio session, off schedules wakes instead.
+    ///
+    /// Nil pump manager means neither, which is the safe direction: no probe, no deliberate disconnect.
+    private var keepAliveIsScheduledWake: Bool {
+        pumpManager?.state.useSilentTones == false
     }
 
     /// Drop the link a few seconds after the last command, so the probe has something to arm against.
-    /// Off by default; the probe alone only covers the involuntary drops, which is under 5% of cycles.
+    /// The probe alone only covers the involuntary drops — 8 arms against 129 drops over 08-13..16 —
+    /// so the two go together and follow the same setting.
     ///
     /// Ported from OmnipodKit, where the pair has been in production against the same host and the same
     /// iOS behaviour. Kept deliberately close to it — names, defaults and structure — so the two can be
-    /// reviewed against each other.
-    static var connectOnDemandEnabled: Bool {
-        (UserDefaults.standard.object(forKey: "MedtrumKit.connectOnDemandEnabled") as? Bool) ?? false
+    /// reviewed against each other. `MedtrumKit.connectOnDemandEnabled` overrides.
+    var connectOnDemandEnabled: Bool {
+        if let override = UserDefaults.standard.object(forKey: "MedtrumKit.connectOnDemandEnabled") as? Bool {
+            return override
+        }
+        return keepAliveIsScheduledWake
     }
 
     /// Idle-disconnect delay (seconds) after the last command. Kept SHORT so a background wake cycle
@@ -100,7 +115,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     /// happens to send something, which is what leaves every loop cycle to start in a freshly resumed,
     /// background-throttled process.
     private var delayedProbeUsable: Bool {
-        BluetoothManager.delayedConnectProbeEnabled && heartbeatEnabled && attempt == nil
+        delayedConnectProbeEnabled && heartbeatEnabled && attempt == nil
             && !shouldHoldConnection
     }
 

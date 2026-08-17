@@ -434,14 +434,14 @@ extension PeripheralManager: CBPeripheralDelegate {
     /// measured a ~12 min missed loop when the link was still up at that point. A command burst shares one
     /// connection: each command resets `idleStart`, so this only lands after the last of them.
     private func scheduleIdleDisconnectIfNeeded() {
-        guard BluetoothManager.connectOnDemandEnabled else { return }
+        guard bluetoothManager.connectOnDemandEnabled else { return }
         let idleDelay = BluetoothManager.idleDisconnectSeconds
         idleLock.lock()
         let idleAt = idleStart
         idleLock.unlock()
 
         queue.asyncAfter(deadline: .now() + idleDelay) { [weak self] in
-            guard let self = self, BluetoothManager.connectOnDemandEnabled else { return }
+            guard let self = self, bluetoothManager.connectOnDemandEnabled else { return }
 
             // Foreground holds the link: the UI wants it, and iOS ignores the start delay there anyway.
             if self.bluetoothManager.shouldHoldConnection {
