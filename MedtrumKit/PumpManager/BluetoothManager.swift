@@ -112,6 +112,11 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     private var delayedProbeInFlight = false
     /// When the in-flight probe is actually due, so a connect that lands early can be told from a wake.
     private var delayedProbeDueAt: Date?
+    /// True while a real command's connect owns the link (connect-on-demand). The heartbeat probe and a
+    /// command connect must never be outstanding together — a command preempts the probe and, while it is
+    /// active, the probe is neither armed nor allowed to claim a didConnect. Cleared on the
+    /// idle-disconnect (going idle) so the probe re-arms. managerQueue-isolated.
+    private var commandConnectInFlight = false
     /// Set after a probe landed early; re-arming is held off until then so the two cannot chase each other.
     private var probeSuppressedUntil: Date?
     /// Set when a scheduled wake connected: the link is dropped again straight away and the heartbeat is
@@ -202,6 +207,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         logger.info("Connecting to \(peripheral)")
 
         self.peripheral = peripheral
+        commandConnectInFlight = true
         manager.connect(peripheral)
     }
 
@@ -273,7 +279,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     /// Must be called on `managerQueue`.
     @discardableResult
     private func issueDelayedConnectProbe() -> Bool {
-        guard delayedProbeUsable, !delayedProbeInFlight else { return false }
+        guard delayedProbeUsable, !delayedProbeInFlight, !commandConnectInFlight else { return false }
         if let until = probeSuppressedUntil, Date() < until { return false }
         probeSuppressedUntil = nil
         guard let peripheral = peripheral ?? knownPeripheralOnQueue() else { return false }
@@ -308,11 +314,6 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         delayedProbeInFlight = true
         delayedProbeDueAt = Date().addingTimeInterval(TimeInterval(delaySeconds))
         logger.info("[heartbeat] issuing connect with StartDelay=\(delaySeconds)s")
-        // Clear any outstanding connect first: CoreBluetooth ignores the start delay when one is already
-        // pending for this peripheral, so the probe would land at once instead of at the target. Observed
-        // on 2026-08-17 07:55:42 — a connect-on-demand from the loop cycle was still outstanding, the
-        // re-arm resolved immediately, and it ran a second loop cycle 31 s after the first.
-        manager.cancelPeripheralConnection(peripheral)
         manager.connect(peripheral, options: [CBConnectPeripheralOptionStartDelayKey: NSNumber(value: delaySeconds)])
         return true
     }
@@ -500,6 +501,8 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
 
     private func disconnectOnQueue(force: Bool) {
         forcedDisconnect = force
+        // deliberate disconnect: the command is done with the link, let the probe re-arm
+        commandConnectInFlight = false
 
         if let peripheral, peripheral.state == .connected {
             manager.cancelPeripheralConnection(peripheral)
@@ -639,7 +642,7 @@ extension BluetoothManager {
         // handler fires the heartbeat and re-arms the next wake, and the loop's own commands take the link
         // through ensureConnected. Holding this link instead would put us right back where we started —
         // connected, idle, and never scheduled.
-        if delayedProbeInFlight, attempt == nil {
+        if delayedProbeInFlight, !commandConnectInFlight, attempt == nil {
             let secondsEarly = delayedProbeDueAt?.timeIntervalSinceNow ?? 0
             delayedProbeInFlight = false
             delayedProbeDueAt = nil
