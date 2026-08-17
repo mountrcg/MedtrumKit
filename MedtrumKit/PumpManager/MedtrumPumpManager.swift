@@ -42,7 +42,6 @@ public class MedtrumPumpManager: DeviceManager {
         bluetooth.pumpManager = self
     }
 
-
     /// background sync, doesn't lock loops
     static let heartbeatSyncFreshnessInterval: TimeInterval = .minutes(2.5)
 

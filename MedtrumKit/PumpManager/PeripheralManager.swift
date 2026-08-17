@@ -280,7 +280,7 @@ extension PeripheralManager: CBPeripheralDelegate {
         }
 
         if characteristic.uuid == CBUUID.READ_UUID {
-            // data[1] == 0x00, is a heartbeat with  no data
+            // data[1] == 0x00, is a heartbeat with no data
             if data[1] != 0x00 {
                 handleHeartbeat(data: data)
             } else {
