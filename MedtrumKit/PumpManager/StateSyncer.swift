@@ -139,12 +139,6 @@ enum StateSyncer {
         pumpManager.notifyStateDidChange()
     }
 
-    /// Reads the patch clock only if the last reading has aged out.
-    ///
-    /// `fetchPatchTime` is a full BLE round trip and it ran on every sync, doubling the number of
-    /// commands the sync path issues. What it feeds - `shouldShowTimeWarning()` - is a settings
-    /// badge with a 15-second tolerance and no influence on dosing, and a patch clock drifts by
-    /// seconds per day, so checking it every few minutes buys nothing.
     public static func fetchPatchTimeIfStale(pumpManager: MedtrumPumpManager) {
         let age = Date.now.timeIntervalSince(pumpManager.state.pumpTimeSyncedAt)
         guard age > MedtrumPumpManager.patchTimeRefreshInterval else {

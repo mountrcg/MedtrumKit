@@ -42,39 +42,13 @@ public class MedtrumPumpManager: DeviceManager {
         bluetooth.pumpManager = self
     }
 
-    // There are two doors into the full `SynchronizePacket` round trip, and they deliberately
-    // hold *different* thresholds, because they cost completely different things.
-    //
-    // Both measure the age of `state.lastSync`, which only advances on a full sync or on a
-    // notification that actually changed something - so it tracks "when we last had a complete
-    // picture", and these thresholds are how long we are willing to go without one.
-    //
-    // The patch does notify frequently (measured at roughly one frame every 7s), but the great
-    // majority carry only CGM fields, which this driver ignores. How often a frame carries pump
-    // state varies enormously - hundreds a day in some stretches, a handful in others - so the
-    // notification stream cannot be relied on to keep state current on its own. That is what the
-    // round trip is for.
 
-    /// The heartbeat door (`considerFullSync`), evaluated on every patch notification and running
-    /// the sync on a background queue. It is off the loop's critical path and therefore
-    /// effectively free, so it should be **eager**: refresh early, and the loop will find the
-    /// state already fresh when it asks.
+    /// background sync, doesn't lock loops
     static let heartbeatSyncFreshnessInterval: TimeInterval = .minutes(2.5)
 
-    /// The loop door (`ensureCurrentPumpData`), which the host calls and *blocks* on - and a
-    /// `SynchronizePacket` is a three-fragment response costing roughly 4s. So it should be
-    /// **lazy**: only force a sync if the heartbeat door has genuinely failed to do one.
-    ///
-    /// The trade-off in raising this: `syncPumpData` is also what calls `ensureConnectedAndActive`,
-    /// so this door doubles as a reconnect trigger. When the heartbeat door is not firing - link
-    /// down, or the patch gone quiet - recovery waits this long rather than the 2.5 minutes it
-    /// used to.
+    /// start of the loop, try to avoid syncs
     static let loopSyncFreshnessInterval: TimeInterval = .minutes(4.5)
 
-    /// Patch clock drift only feeds a settings badge (`shouldShowTimeWarning`) and nothing in the
-    /// dosing path, but `fetchPatchTime` is a second BLE round trip and used to run on every
-    /// single sync - a second command per sync, several hundred a day, to watch a value that
-    /// moves by seconds per day.
     static let patchTimeRefreshInterval: TimeInterval = .minutes(30)
 
     public required convenience init?(rawState: RawStateValue) {

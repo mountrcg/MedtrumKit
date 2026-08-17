@@ -28,11 +28,7 @@ class PeripheralManager: NSObject {
 
     private let semaphore = DispatchSemaphore(value: 1)
 
-    /* access must be serialized with stateLock */
-    /// True while `considerFullSync` has a `SynchronizePacket` outstanding. That decision is made
-    /// on every patch notification - seconds apart - while a sync takes seconds to complete, and a
-    /// *failed* sync never advances `lastSync`. Without this, a bad link would start a fresh sync
-    /// on every notification and pile them up behind the write semaphore, ahead of real commands.
+    /* access must be serialized with stateLock, prevents concurrent `considerFullSync` runs */
     private var isFullSyncInFlight = false
 
     public init(
@@ -284,32 +280,13 @@ extension PeripheralManager: CBPeripheralDelegate {
         }
 
         if characteristic.uuid == CBUUID.READ_UUID {
-            // data[0] is the PatchState and data[1..3] the little-endian field mask, so data[1]
-            // is the low byte - suspend, bolus, basal, setup, reservoir, startTime, battery -
-            // and data[2] the high byte: storage, alarm, age, magneto placement.
-            //
-            // Only frames with something in the low byte are worth parsing. In practice that is
-            // the minority: the patch also reports CGM data on this characteristic, and those
-            // frames carry nothing this driver consumes.
+            // data[1] == 0x00, is a heartbeat with  no data
             if data[1] != 0x00 {
                 handleHeartbeat(data: data)
             } else {
-                // Nothing in the low byte to apply, but the patch is alive and the host may be
-                // relying on us for its loop trigger. (The parsing path fires this too, at the
-                // end of `parseStateUpdate`.)
                 pumpManager.issueHeartbeatIfNeeded()
             }
 
-            // Last, and outside the branch, for two reasons.
-            //
-            // It has to see the payload's effects: applying a frame can advance `lastSync` or
-            // settle `bolusState`, so deciding first means starting a sync the frame had already
-            // made unnecessary, or skipping as "bolusing" a bolus that same frame just reported
-            // finished.
-            //
-            // And it has to run for unparsed frames too. The decision needs only the age of the
-            // last complete picture, never the payload, so confining it to parsed frames only
-            // starved it - the loop's own blocking sync would get there first.
             considerFullSync()
             return
         }
@@ -405,28 +382,15 @@ extension PeripheralManager: CBPeripheralDelegate {
         var packet = NotificationPacket()
         packet.decode(data)
 
-        // Always apply what the patch just told us. `StateSyncer.sync` takes whatever fields the
-        // frame carried - basal state, reservoir, battery, suspend detection - and this is free,
-        // no round trip involved. It used to be skipped whenever a full sync was about to run,
-        // which threw away an update already in hand if that sync then failed.
         parseStateUpdate(packet.parseResponse(), duringReconnect: false, fullSync: false)
     }
 
-    /// Decides whether the patch's picture is stale enough to be worth a full `SynchronizePacket`,
-    /// and starts one if so.
-    ///
-    /// Deliberately takes no payload: the decision needs only the age of the last full sync, so it
-    /// can be made for *every* notification rather than only the ones that carry low-byte fields.
     private func considerFullSync() {
         let age = Date.now.timeIntervalSince(pumpManager.state.lastSync)
         guard age > MedtrumPumpManager.heartbeatSyncFreshnessInterval else {
             return
         }
 
-        // An extra command in the middle of a bolus is not worth the risk; the bolus keeps
-        // pushing progress through the notification stream meanwhile. Logged at debug, not
-        // warning: this is evaluated on every notification, so at warning level a single bolus
-        // would fill the log with one line every few seconds.
         guard pumpManager.state.bolusState == .noBolus else {
             log.debug("Skipping sync, pump is currently bolusing")
             return
@@ -442,7 +406,6 @@ extension PeripheralManager: CBPeripheralDelegate {
 
         // Do the full sync off the loop's critical path.
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            // If self is gone the flag went with it, so there is nothing to release.
             guard let self else {
                 return
             }
