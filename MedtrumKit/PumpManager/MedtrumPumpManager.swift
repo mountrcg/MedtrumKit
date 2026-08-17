@@ -42,6 +42,12 @@ public class MedtrumPumpManager: DeviceManager {
         bluetooth.pumpManager = self
     }
 
+    /// Patch clock drift only feeds a settings badge (`shouldShowTimeWarning`) and nothing in the
+    /// dosing path, but `fetchPatchTime` is a second BLE round trip and used to run on every
+    /// single sync - a second command per sync, several hundred a day, to watch a value that
+    /// moves by seconds per day.
+    static let patchTimeRefreshInterval: TimeInterval = .minutes(30)
+
     public required convenience init?(rawState: RawStateValue) {
         self.init(state: MedtrumPumpState(rawValue: rawState))
     }
@@ -269,7 +275,7 @@ public extension MedtrumPumpManager {
             }
 
             let syncResult = self.bluetooth.write(SynchronizePacket())
-            StateSyncer.fetchPatchTime(pumpManager: self)
+            StateSyncer.fetchPatchTimeIfStale(pumpManager: self)
 
             switch syncResult {
             case let .failure(error):

@@ -407,7 +407,7 @@ extension PeripheralManager: CBPeripheralDelegate {
                 }
 
                 self.parseStateUpdate(syncResponse, duringReconnect: false, fullSync: true)
-                StateSyncer.fetchPatchTime(pumpManager: self.pumpManager)
+                StateSyncer.fetchPatchTimeIfStale(pumpManager: self.pumpManager)
             }
         }
     }
