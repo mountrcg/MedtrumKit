@@ -30,6 +30,9 @@ class PeripheralManager: NSObject {
 
     private let semaphore = DispatchSemaphore(value: 1)
 
+    /// Longer than the exchange timeout, so one stuck command is waited out and the next caller is not.
+    private static let linkWaitTimeoutSeconds = 40
+
     /* access must be serialized with stateLock, prevents concurrent `considerFullSync` runs */
     private var isFullSyncInFlight = false
 
@@ -78,13 +81,19 @@ class PeripheralManager: NSObject {
         return isInvalidated
     }
 
+    /// Both waits are bounded. A caller parked on the link is invisible: the loop raises
+    /// `trio.aps.loop.notActive` from inside the cycle, so a blocked cycle suppresses its own alert.
     func writePacket(_ packet: any MedtrumBasePacketProtocol) -> MedtrumWriteResult<Any> {
         guard let characteristic = writeCharacteristic else {
             log.error("No write characteristic found... Device might be disconnected...")
             return .failure(error: .noWriteCharacteristic)
         }
 
-        semaphore.wait()
+        // return before the `defer` below: a caller that never took the token must not signal one
+        guard semaphore.wait(timeout: .now() + .seconds(Self.linkWaitTimeoutSeconds)) == .success else {
+            log.warning("Link still busy after \(Self.linkWaitTimeoutSeconds)s, giving up on this command")
+            return .failure(error: .alreadyRunning)
+        }
         defer {
             semaphore.signal()
         }
