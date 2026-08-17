@@ -24,6 +24,7 @@ class PeripheralManager: NSObject {
     private var currentSequence: UInt8 = 0
     private var writeQueue: MedtrumKitDispatchGroup?
     private var writeResponse: MedtrumWriteResult<Any>?
+    private var isInvalidated = false
     /* end */
 
     private let semaphore = DispatchSemaphore(value: 1)
@@ -49,6 +50,7 @@ class PeripheralManager: NSObject {
 
     func cleanup() {
         stateLock.lock()
+        isInvalidated = true
         let queue = writeQueue
         writeQueue = nil
         currentPacket = nil
@@ -57,6 +59,12 @@ class PeripheralManager: NSObject {
         // outside the lock: leave() takes a lock of its own, and it wakes writePacket, which
         // immediately wants ours.
         queue?.leave()
+    }
+
+    private var isInvalidatedLocked: Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return isInvalidated
     }
 
     func writePacket(_ packet: any MedtrumBasePacketProtocol) -> MedtrumWriteResult<Any> {
@@ -74,6 +82,13 @@ class PeripheralManager: NSObject {
         writeQ.enter()
 
         stateLock.lock()
+        guard !isInvalidated else {
+            stateLock.unlock()
+            // Balance the enter above: the group has to be entered before it is published, or
+            // cleanup could leave() it first and this write would then wait out its full timeout.
+            writeQ.leave()
+            return .failure(error: .noManager)
+        }
         writeQueue = writeQ
         currentPacket = packet
         currentSequence = writeSequence
@@ -178,6 +193,10 @@ extension PeripheralManager {
             completion?(.failedToCompleteAuthorizationFlow(localizedError: error.localizedDescription))
 
         case .success:
+            guard !isInvalidatedLocked else {
+                return
+            }
+
             log.info("Connected to pump!")
 
             pumpManager.state.isConnected = true
@@ -187,6 +206,10 @@ extension PeripheralManager {
     }
 
     private func parseStateUpdate(_ syncResponse: SynchronizePacketResponse, duringReconnect: Bool, fullSync: Bool) {
+        guard !isInvalidatedLocked else {
+            return
+        }
+
         // TEMP
         do {
             log.info("State update: \(String(data: try JSONEncoder().encode(syncResponse), encoding: .utf8) ?? "")")

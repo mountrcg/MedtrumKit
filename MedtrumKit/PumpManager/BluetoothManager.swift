@@ -16,6 +16,9 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
 
     private var attempt: ConnectAttempt?
 
+    private var reconnectAttempts = 0
+    private var reconnectTask: Task<Void, Never>?
+
     // MUST NOT be called from within managerQueue - deadlock
     public var isConnected: Bool {
         managerQueue.sync { isConnectedOnQueue }
@@ -70,6 +73,9 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
 
         logger.info("Connecting to \(peripheral)")
 
+        // cancelling a pending connect does not always produce a didDisconnect
+        forcedDisconnect = false
+
         self.peripheral = peripheral
         manager.connect(peripheral)
     }
@@ -95,8 +101,61 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
             self.attempt = nil
         }
 
+        if error == nil {
+            reconnectAttempts = 0
+            reconnectTask?.cancel()
+            reconnectTask = nil
+        } else {
+            scheduleReconnect()
+        }
+
         for completion in attempt.completions {
             report(error, to: completion)
+        }
+    }
+
+    /// Must be called on `managerQueue`.
+    private func scheduleReconnect() {
+        // `ensureConnectedOnQueue` can retrieve the peripheral from stored identifier
+        guard peripheral != nil || pumpManager?.state.peripheralIdentifier != nil else {
+            // otherwise we would be retrying a scan, which doesn't work in the background
+            return
+        }
+
+        let seconds: TimeInterval = reconnectAttempts == 0
+            ? 0
+            : min(TimeInterval(1 << min(reconnectAttempts, 6)), 60)
+        reconnectAttempts += 1
+
+        logger.info("Scheduling reconnect #\(reconnectAttempts) in \(Int(seconds))s")
+
+        reconnectTask?.cancel()
+        reconnectTask = Task { [weak self] in
+            if seconds > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(seconds) * 1_000_000_000)
+                if Task.isCancelled {
+                    return
+                }
+            }
+
+            guard let self else {
+                return
+            }
+
+            managerQueue.async {
+                guard self.attempt == nil,
+                      !self.isConnectedOnQueue,
+                      self.peripheral != nil || self.pumpManager?.state.peripheralIdentifier != nil
+                else {
+                    return
+                }
+
+                self.ensureConnectedOnQueue { error in
+                    if let error = error {
+                        self.logger.warning("Failed to auto-reconnect: \(error)")
+                    }
+                }
+            }
         }
     }
 
@@ -269,7 +328,8 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     private func disconnectOnQueue(force: Bool) {
         forcedDisconnect = force
 
-        if let peripheral, peripheral.state == .connected {
+        // both .connected AND .connecting
+        if let peripheral, peripheral.state != .disconnected {
             manager.cancelPeripheralConnection(peripheral)
         }
 
@@ -288,13 +348,30 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     }
 
     private func clearPeripheralOnQueue() {
+        if manager.isScanning {
+            manager.stopScan()
+        }
+        scanCompletion = nil
+
         peripheral = nil
+        // didDisconnectPeripheral returns early on a forced disconnect, so this is the only place
+        // the forced path can invalidate the manager - releasing it is not enough, its auth/sync
+        // worker holds its own reference and would keep writing to pumpManager.state.
+        peripheralManager?.cleanup()
         peripheralManager = nil
 
         if pumpManager?.state.peripheralIdentifier != nil {
             pumpManager?.state.peripheralIdentifier = nil
             pumpManager?.notifyStateDidChange()
         }
+
+        if let attempt = attempt {
+            finish(attempt, .failedToFindDevice)
+        }
+
+        reconnectTask?.cancel()
+        reconnectTask = nil
+        reconnectAttempts = 0
     }
 }
 
@@ -389,8 +466,14 @@ extension BluetoothManager {
         )
     }
 
-    func centralManager(_: CBCentralManager, didConnect peripheral: CBPeripheral) {
+    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         logger.info("Connected to pump: \(peripheral.name ?? "<NO_NAME>")!")
+
+        if forcedDisconnect {
+            logger.info("Dropping a connection that landed after a forced disconnect")
+            central.cancelPeripheralConnection(peripheral)
+            return
+        }
 
         // This guard drops the link rather than just returning. `peripheral` is already set at this
         // point, so bailing out would leave a live peripheral with no PeripheralManager behind it:
@@ -488,14 +571,10 @@ extension BluetoothManager {
         }
 
         if let attempt = attempt {
+            logger.info("Disconnected during the connect sequence")
             finish(attempt, .failedToConnectToDevice)
-
         } else {
-            ensureConnectedOnQueue { error in
-                if let error = error {
-                    self.logger.warning("Failed to auto-reconnect: \(error)")
-                }
-            }
+            scheduleReconnect()
         }
     }
 

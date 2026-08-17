@@ -884,6 +884,8 @@ public extension MedtrumPumpManager {
         notifyStateDidChange()
 
         emitPumpEvents(events)
+
+        bluetooth.disconnect(force: true)
     }
 
     func clearAlert(alertType: AlertType, completion: @escaping (Bool) -> Void) {
