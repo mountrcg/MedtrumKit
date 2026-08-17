@@ -53,6 +53,7 @@ public class MedtrumPumpState: RawRepresentable {
         lastSync = rawValue["lastSync"] as? Date ?? Date.distantPast
         pumpSN = rawValue["pumpSN"] as? Data ?? Data()
         useSilentTones = rawValue["useSilentTones"] as? Bool ?? false
+        useScheduledWake = rawValue["useScheduledWake"] as? Bool ?? false
         lowReservoirWarning = rawValue["lowReservoirWarning"] as? Double
         sessionToken = rawValue["sessionToken"] as? Data ?? Data()
         backupSessionToken = rawValue["backupSessionToken"] as? Data ?? Data()
@@ -132,6 +133,7 @@ public class MedtrumPumpState: RawRepresentable {
         lastSync = Date.distantPast
         pumpSN = Data()
         useSilentTones = false
+        useScheduledWake = false
         lowReservoirWarning = nil
         bolusDose = nil
         sessionToken = Data()
@@ -197,6 +199,7 @@ public class MedtrumPumpState: RawRepresentable {
         value["expiryMode"] = expiryMode.rawValue
         value["notificationAfterActivation"] = notificationAfterActivation
         value["useSilentTones"] = useSilentTones
+        value["useScheduledWake"] = useScheduledWake
 
         if let previousPatch = previousPatch {
             do {
@@ -212,7 +215,23 @@ public class MedtrumPumpState: RawRepresentable {
     public var lastSync: Date
     public var pumpSN: Data
     public var lowReservoirWarning: Double?
-    public var useSilentTones: Bool
+    /// Keep the app alive while backgrounded by holding an audio session open. Mutually exclusive with
+    /// `useScheduledWake` — both solve the same problem, and running both is redundant. Both off is
+    /// allowed and leaves the loop on a throttled, freshly resumed process.
+    public var useSilentTones: Bool {
+        didSet {
+            if useSilentTones, useScheduledWake { useScheduledWake = false }
+        }
+    }
+
+    /// Keep the loop off a throttled process by asking iOS to wake the app just after the next expected
+    /// reading, dropping the patch link between commands so the wake can be armed. Mutually exclusive
+    /// with `useSilentTones`; enforced here so no caller can set both.
+    public var useScheduledWake: Bool {
+        didSet {
+            if useScheduledWake, useSilentTones { useSilentTones = false }
+        }
+    }
 
     // Patch specific data
     public var sessionToken: Data

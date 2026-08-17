@@ -475,6 +475,9 @@ struct MedtrumKitSettings: View {
                 Toggle(isOn: $viewModel.useSilentTones) {
                     Text("Enable Silent tones", comment: "silent tones label")
                 }
+                Toggle(isOn: $viewModel.useScheduledWake) {
+                    Text("Enable Scheduled wake", comment: "scheduled wake label")
+                }
                 Button(action: { self.isSharePresented = true }) {
                     Text("Share Medtrum patch logs", comment: "Share logs")
                 }

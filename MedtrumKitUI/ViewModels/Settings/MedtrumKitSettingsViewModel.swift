@@ -57,6 +57,20 @@ class MedtrumKitSettingsViewModel: PatchLifetimeFormatting, ObservableObject, Pu
             }
 
             pumpManager?.state.useSilentTones = useSilentTones
+            // the state keeps the two exclusive, so read back what it settled on
+            useScheduledWake = pumpManager?.state.useScheduledWake ?? false
+            pumpManager?.notifyStateDidChange()
+        }
+    }
+
+    @Published var useScheduledWake = false {
+        didSet {
+            guard pumpManager?.state.useScheduledWake != useScheduledWake else {
+                return
+            }
+
+            pumpManager?.state.useScheduledWake = useScheduledWake
+            useSilentTones = pumpManager?.state.useSilentTones ?? false
             pumpManager?.notifyStateDidChange()
         }
     }
@@ -401,6 +415,7 @@ extension MedtrumKitSettingsViewModel {
         showPumpTimeSyncWarning = state.shouldShowTimeWarning()
         patchState = state.pumpState
         useSilentTones = state.useSilentTones
+        useScheduledWake = state.useScheduledWake
         patchStateString = state.pumpState.description
         pumpTime = state.pumpTime
         pumpTimeSyncedAt = state.pumpTimeSyncedAt

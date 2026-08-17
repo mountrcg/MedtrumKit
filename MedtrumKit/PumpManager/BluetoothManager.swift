@@ -38,7 +38,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     }
 
     /// Wake the app just after the next expected reading, so the loop cycle does not start in a freshly
-    /// resumed, throttled process. Follows `useSilentTones` being off — see `keepAliveIsScheduledWake`.
+    /// resumed, throttled process. Follows the `useScheduledWake` setting — see `keepAliveIsScheduledWake`.
     ///
     /// `MedtrumKit.delayedConnectProbeEnabled` overrides in either direction and is the kill switch:
     /// false restores the previous behaviour exactly — reconnect immediately on every drop, never issue
@@ -50,13 +50,12 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         return keepAliveIsScheduledWake
     }
 
-    /// Which keep-alive is in play. The silent-tones session and the scheduled wake solve the same
-    /// problem — keeping the loop off a throttled, freshly-resumed process — so exactly one runs:
-    /// `useSilentTones` on holds the app up through the audio session, off schedules wakes instead.
+    /// Which keep-alive the user picked. `MedtrumPumpState` keeps this exclusive with `useSilentTones`;
+    /// both off is allowed and simply leaves the throttling in place.
     ///
-    /// Nil pump manager means neither, which is the safe direction: no probe, no deliberate disconnect.
+    /// Nil pump manager means off, which is the safe direction: no probe, no deliberate disconnect.
     private var keepAliveIsScheduledWake: Bool {
-        pumpManager?.state.useSilentTones == false
+        pumpManager?.state.useScheduledWake == true
     }
 
     /// Drop the link a few seconds after the last command, so the probe has something to arm against.
