@@ -72,12 +72,18 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
             scanCompletion = nil
         }
 
-        logger.info("Connecting to \(peripheral)")
-
         // cancelling a pending connect does not always produce a didDisconnect
         forcedDisconnect = false
 
         self.peripheral = peripheral
+
+        // a connect from an earlier attempt can still be pending
+        guard peripheral.state != .connecting else {
+            logger.info("Connect already pending, waiting on it")
+            return
+        }
+
+        logger.info("Connecting to \(peripheral)")
         manager.connect(peripheral)
     }
 
@@ -292,6 +298,8 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     private func armTimeout(_ attempt: ConnectAttempt, seconds: TimeInterval) {
         attempt.timeout?.cancel()
         attempt.armedAt = .now
+        attempt.timeoutGeneration &+= 1
+        let generation = attempt.timeoutGeneration
 
         attempt.timeout = Task { [weak self, weak attempt] in
             do {
@@ -307,7 +315,9 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
 
             managerQueue.async { [weak self, weak attempt] in
                 // is this still the attempt in flight? Covers being superseded by a re-arm, and waking a moment before cancellation landed.
-                guard let self, let attempt, self.attempt === attempt else {
+                guard let self, let attempt, self.attempt === attempt,
+                      attempt.timeoutGeneration == generation
+                else {
                     return
                 }
 
