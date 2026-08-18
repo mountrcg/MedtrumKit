@@ -234,10 +234,7 @@ public extension MedtrumPumpManager {
               age > Self.loopSyncFreshnessInterval ||
               Date.now.timeIntervalSince(activatedAt) < .minutes(4)
         else {
-            log
-                .warning(
-                    "Skipping status update -> data is fresh or not active: \(age) sec"
-                )
+            log.info("Skipping status update -> data is fresh or not active: \(Int(age)) sec")
             completion?(nil)
             return
         }
@@ -867,6 +864,8 @@ public extension MedtrumPumpManager {
         notifyStateDidChange()
 
         emitPumpEvents(events)
+
+        bluetooth.disconnect(force: true)
     }
 
     func clearAlert(alertType: AlertType, completion: @escaping (Bool) -> Void) {
