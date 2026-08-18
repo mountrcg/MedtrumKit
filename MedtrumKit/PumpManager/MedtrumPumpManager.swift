@@ -42,6 +42,14 @@ public class MedtrumPumpManager: DeviceManager {
         bluetooth.pumpManager = self
     }
 
+    /// background sync, doesn't lock loops
+    static let heartbeatSyncFreshnessInterval: TimeInterval = .minutes(2.5)
+
+    /// start of the loop, try to avoid syncs
+    static let loopSyncFreshnessInterval: TimeInterval = .minutes(4.5)
+
+    static let patchTimeRefreshInterval: TimeInterval = .minutes(30)
+
     public required convenience init?(rawState: RawStateValue) {
         self.init(state: MedtrumPumpState(rawValue: rawState))
     }
@@ -220,13 +228,15 @@ public extension MedtrumPumpManager {
     }
 
     func ensureCurrentPumpData(completion: ((Date?) -> Void)?) {
+        let age = Date.now.timeIntervalSince(state.lastSync)
+
         guard let activatedAt = state.patchActivatedAt,
-              Date.now.timeIntervalSince(state.lastSync) > .minutes(2.5) ||
+              age > Self.loopSyncFreshnessInterval ||
               Date.now.timeIntervalSince(activatedAt) < .minutes(4)
         else {
             log
                 .warning(
-                    "Skipping status update -> data is fresh or not active: \(Date.now.timeIntervalSince(state.lastSync)) sec"
+                    "Skipping status update -> data is fresh or not active: \(age) sec"
                 )
             completion?(nil)
             return
@@ -269,7 +279,7 @@ public extension MedtrumPumpManager {
             }
 
             let syncResult = self.bluetooth.write(SynchronizePacket())
-            StateSyncer.fetchPatchTime(pumpManager: self)
+            StateSyncer.fetchPatchTimeIfStale(pumpManager: self)
 
             switch syncResult {
             case let .failure(error):

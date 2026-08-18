@@ -139,6 +139,15 @@ enum StateSyncer {
         pumpManager.notifyStateDidChange()
     }
 
+    public static func fetchPatchTimeIfStale(pumpManager: MedtrumPumpManager) {
+        let age = Date.now.timeIntervalSince(pumpManager.state.pumpTimeSyncedAt)
+        guard age > MedtrumPumpManager.patchTimeRefreshInterval else {
+            return
+        }
+
+        fetchPatchTime(pumpManager: pumpManager)
+    }
+
     public static func fetchPatchTime(pumpManager: MedtrumPumpManager) {
         let timeData = pumpManager.bluetooth.write(GetTimePacket())
 

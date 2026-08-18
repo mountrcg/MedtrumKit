@@ -28,6 +28,9 @@ class PeripheralManager: NSObject {
 
     private let semaphore = DispatchSemaphore(value: 1)
 
+    /* access must be serialized with stateLock, prevents concurrent `considerFullSync` runs */
+    private var isFullSyncInFlight = false
+
     public init(
         _ peripheral: CBPeripheral,
         _ bluetoothManager: BluetoothManager,
@@ -277,12 +280,14 @@ extension PeripheralManager: CBPeripheralDelegate {
         }
 
         if characteristic.uuid == CBUUID.READ_UUID {
-            guard data[1] != 0x00 else {
+            // data[1] == 0x00, is a heartbeat with no data
+            if data[1] != 0x00 {
+                handleHeartbeat(data: data)
+            } else {
                 pumpManager.issueHeartbeatIfNeeded()
-                return
             }
 
-            handleHeartbeat(data: data)
+            considerFullSync()
             return
         }
 
@@ -377,21 +382,37 @@ extension PeripheralManager: CBPeripheralDelegate {
         var packet = NotificationPacket()
         packet.decode(data)
 
-        guard Date.now.timeIntervalSince(pumpManager.state.lastSync) > .minutes(2.5) else {
-            parseStateUpdate(packet.parseResponse(), duringReconnect: false, fullSync: false)
+        parseStateUpdate(packet.parseResponse(), duringReconnect: false, fullSync: false)
+    }
+
+    private func considerFullSync() {
+        let age = Date.now.timeIntervalSince(pumpManager.state.lastSync)
+        guard age > MedtrumPumpManager.heartbeatSyncFreshnessInterval else {
             return
         }
 
         guard pumpManager.state.bolusState == .noBolus else {
-            parseStateUpdate(packet.parseResponse(), duringReconnect: false, fullSync: false)
-            log.warning("Skipping sync, pump is currently bolusing")
+            log.debug("Skipping sync, pump is currently bolusing")
             return
         }
 
-        // Do full sync (only every 3min)
+        stateLock.lock()
+        guard !isFullSyncInFlight else {
+            stateLock.unlock()
+            return
+        }
+        isFullSyncInFlight = true
+        stateLock.unlock()
+
+        // Do the full sync off the loop's critical path.
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else {
                 return
+            }
+            defer {
+                self.stateLock.lock()
+                self.isFullSyncInFlight = false
+                self.stateLock.unlock()
             }
 
             let response = self.writePacket(SynchronizePacket())
@@ -407,7 +428,7 @@ extension PeripheralManager: CBPeripheralDelegate {
                 }
 
                 self.parseStateUpdate(syncResponse, duringReconnect: false, fullSync: true)
-                StateSyncer.fetchPatchTime(pumpManager: self.pumpManager)
+                StateSyncer.fetchPatchTimeIfStale(pumpManager: self.pumpManager)
             }
         }
     }
