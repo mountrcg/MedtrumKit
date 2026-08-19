@@ -158,7 +158,8 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
                     viewModel: viewModel,
                     doDirtyCheck: dirtyCheck
                 ),
-                title: String(localized: "Patch Settings", comment: "Text for patch settings view")
+                title: String(localized: "Patch Settings", comment: "Text for patch settings view"),
+                showsConnectionStatus: true
             )
 
         case .deactivatePatchScreen:
@@ -166,7 +167,8 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
             let viewModel = DeactivatePatchViewModel(pumpManager, nextStep)
             return hostingController(
                 rootView: PatchDeactivationView(viewModel: viewModel),
-                title: String(localized: "Deactivate Patch", comment: "deactive patch")
+                title: String(localized: "Deactivate Patch", comment: "deactive patch"),
+                showsConnectionStatus: true
             )
 
         case .pumpBaseSettingsScreen:
@@ -189,7 +191,8 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
 
             return hostingController(
                 rootView: PumpBaseSettingsView(viewModel: viewModel),
-                title: String(localized: "Pump base settings", comment: "Pump base settings header")
+                title: String(localized: "Pump base settings", comment: "Pump base settings header"),
+                showsConnectionStatus: true
             )
 
         case .patchPrimingScreen:
@@ -202,7 +205,8 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
             return hostingController(
                 rootView: PatchPrimingView(viewModel: viewModel)
                     .onAppear { UIApplication.shared.isIdleTimerDisabled = true },
-                title: String(localized: "Patch Priming", comment: "Priming header")
+                title: String(localized: "Patch Priming", comment: "Priming header"),
+                showsConnectionStatus: true
             )
 
         case .patchActivationScreen:
@@ -214,7 +218,8 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
             return hostingController(
                 rootView: PatchActivationView(viewModel: viewModel)
                     .onAppear { UIApplication.shared.isIdleTimerDisabled = true },
-                title: String(localized: "Patch Activation", comment: "Patch activation header")
+                title: String(localized: "Patch Activation", comment: "Patch activation header"),
+                showsConnectionStatus: true
             )
 
         case .settingsScreen:
@@ -292,14 +297,15 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
     private func hostingController<Content: View>(
         rootView: Content,
         title: String? = nil,
-        largeTitleDisplayMode: UINavigationItem.LargeTitleDisplayMode = .automatic
+        largeTitleDisplayMode: UINavigationItem.LargeTitleDisplayMode = .automatic,
+        showsConnectionStatus: Bool = false
     ) -> DismissibleHostingController<some View> {
+        // Only the screens that talk to the pump base carry the status, and only once a serial
+        // number exists - before that there is no link to be up or down.
+        let hasPumpSN = !(pumpManager?.state.pumpSN.isEmpty ?? true)
         let rootView = rootView
             .environment(\.appName, Bundle.main.bundleDisplayName)
-            .connectionStatusBar(
-                connectionStatusViewModel,
-                isEnabled: !(pumpManager?.state.pumpSN.isEmpty ?? true)
-            )
+            .connectionStatusBar(connectionStatusViewModel, isEnabled: showsConnectionStatus && hasPumpSN)
         let hostedView = DismissibleHostingController(content: rootView, colorPalette: colorPalette)
         hostedView.navigationItem.title = title
         hostedView.navigationItem.largeTitleDisplayMode = largeTitleDisplayMode
