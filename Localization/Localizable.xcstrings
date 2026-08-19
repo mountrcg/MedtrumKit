@@ -5971,6 +5971,18 @@
         }
       }
     },
+    "Allow Bluetooth" : {
+      "comment" : "label for bluetooth unauthorized",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow Bluetooth"
+          }
+        }
+      }
+    },
     "Are you sure you want to stop using Medtrum TouchCare Nano 200u/300u?" : {
       "comment" : "Message for PumpManager deletion action sheet",
       "extractionState" : "manual",
@@ -7587,6 +7599,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "仅蜜蜂："
+          }
+        }
+      }
+    },
+    "Bluetooth is unavailable. Restart the app if this persists." : {
+      "comment" : "MedtrumError bluetoothUnavailable",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth is unavailable. Restart the app if this persists."
+          }
+        }
+      }
+    },
+    "Bluetooth off" : {
+      "comment" : "label for bluetooth powered off",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth off"
           }
         }
       }
@@ -10351,6 +10387,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "目前，您正在使用心跳模式。这需要保持 %%1$@ 在后台运行。 如果您的 CGM 已经提供了一个心声，这可能是有趣的。建议保持启用此功能"
+          }
+        }
+      }
+    },
+    "Restart app" : {
+      "comment" : "label for bluetooth unusable",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restart app"
           }
         }
       }
