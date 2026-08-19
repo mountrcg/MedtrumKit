@@ -9857,6 +9857,18 @@
         }
       }
     },
+    "Connecting..." : {
+      "comment" : "label for connecting",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting..."
+          }
+        }
+      }
+    },
     "Continue" : {
       "comment" : "Continue",
       "extractionState" : "manual",

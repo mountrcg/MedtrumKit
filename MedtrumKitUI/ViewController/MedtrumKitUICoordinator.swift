@@ -27,12 +27,11 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
     private var allowDebugFeatures: Bool
     private let logger = MedtrumLogger(category: "MedtrumKitUICoordinator")
 
-    deinit {
-        logger.info("MedtrumKitUICoordinator deallocated")
-    }
-
     var pumpManagerOnboardingDelegate: (any LoopKitUI.PumpManagerOnboardingDelegate)?
     var completionDelegate: (any LoopKitUI.CompletionDelegate)?
+
+    /// Shared by every hosted screen, so the navigation bar reads the same throughout the flow.
+    private lazy var connectionStatusViewModel = ConnectionStatusViewModel(pumpManager)
 
     var screenStack = [MedtrumUIScreen]()
     var currentScreen: MedtrumUIScreen {
@@ -300,14 +299,37 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
     ) -> DismissibleHostingController<some View> {
         let rootView = rootView
             .environment(\.appName, Bundle.main.bundleDisplayName)
+            .connectionStatusBar(
+                connectionStatusViewModel,
+                isEnabled: !(pumpManager?.state.pumpSN.isEmpty ?? true)
+            )
         let hostedView = DismissibleHostingController(content: rootView, colorPalette: colorPalette)
         hostedView.navigationItem.title = title
         hostedView.navigationItem.largeTitleDisplayMode = largeTitleDisplayMode
         return hostedView
     }
 
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+
+        // Only up to activation - from there BluetoothManager reconnects an active patch itself.
+        guard let pumpManager = pumpManager, pumpManager.state.pumpState.rawValue < PatchState.active.rawValue else {
+            return
+        }
+
+        pumpManager.startConnectingToBase()
+    }
+
     override func viewDidDisappear(_: Bool) {
         UIApplication.shared.isIdleTimerDisabled = false
+
+        // Scanning only finds anything in the foreground, and nobody is left to show it to.
+        pumpManager?.stopConnectingToBase()
+    }
+
+    deinit {
+        pumpManager?.stopConnectingToBase()
+        logger.info("MedtrumKitUICoordinator deallocated")
     }
 
     private func pumpRemoval() {

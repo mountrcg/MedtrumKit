@@ -21,6 +21,10 @@ public class MedtrumPumpManager: DeviceManager {
     }
 
     var bluetooth: BluetoothManager!
+
+    /// Nil whenever the activation flow is not on screen.
+    private var baseConnectTask: Task<Void, Never>?
+
     init(state: MedtrumPumpState) {
         self.state = state
         oldState = MedtrumPumpState(rawValue: state.rawValue)
@@ -678,6 +682,59 @@ public extension MedtrumPumpManager {
     ) {
         log.warning("Skipping sync delivery limits (not supported by Medtrum)")
         completion(.success(limits))
+    }
+
+    /// Connects outside of any command, so the activation flow can show a live status from the
+    /// moment a serial number is known. Retries, since the base only advertises once it is in a patch.
+    func startConnectingToBase() {
+        guard baseConnectTask == nil, !state.pumpSN.isEmpty else {
+            return
+        }
+
+        log.info("Start reaching for the pump base...")
+
+        state.isSearchingForBase = true
+        notifyStateDidChange()
+
+        baseConnectTask = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let self else {
+                    return
+                }
+
+                // isConnected, not the link: a failed auth flow drops it, so the next pass retries.
+                // `bluetooth` is dropped by forgetBluetoothManager, and this ticks on past it.
+                if !self.state.isConnected, let bluetooth = self.bluetooth {
+                    await withCheckedContinuation { continuation in
+                        bluetooth.ensureConnected { error in
+                            if let error = error {
+                                self.log.debug("Could not reach the pump base yet: \(error)")
+                            }
+
+                            continuation.resume()
+                        }
+                    }
+                }
+
+                // Only paces the attempts that fail fast; a scan has already spent its 15s.
+                try? await Task.sleep(nanoseconds: 3 * NSEC_PER_SEC)
+            }
+        }
+    }
+
+    /// Stops the retries. A link that is already up stays up.
+    func stopConnectingToBase() {
+        guard baseConnectTask != nil else {
+            return
+        }
+
+        log.info("Stop reaching for the pump base")
+
+        baseConnectTask?.cancel()
+        baseConnectTask = nil
+
+        state.isSearchingForBase = false
+        notifyStateDidChange()
     }
 
     func primePatch(_ completion: @escaping (MedtrumPrimePatchResult) -> Void) {

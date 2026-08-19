@@ -117,6 +117,17 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         }
     }
 
+    /// Publishes that an attempt is in flight, so the UI can say "connecting" for the seconds the
+    /// flow takes. Must be called on `managerQueue`.
+    private func setConnecting(_ value: Bool) {
+        guard let pumpManager = pumpManager, pumpManager.state.isConnecting != value else {
+            return
+        }
+
+        pumpManager.state.isConnecting = value
+        pumpManager.notifyStateDidChange()
+    }
+
     /// Reports `attempt` to everyone waiting on it, if nobody has yet. Must be called on
     /// `managerQueue`.
     private func finish(_ attempt: ConnectAttempt, _ error: MedtrumConnectError?) {
@@ -127,6 +138,8 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         if self.attempt === attempt {
             self.attempt = nil
         }
+
+        setConnecting(false)
 
         if error == nil {
             reconnectAttempts = 0
@@ -221,6 +234,9 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
             finish(attempt, nil)
             return
         }
+
+        // Past the fast path, so a link that was up all along never reports as connecting.
+        setConnecting(true)
 
         if let peripheral = peripheral, peripheral.state == .connected {
             logger.warning("Connected but the session is not ready, dropping the link to rebuild it")
@@ -454,6 +470,7 @@ extension BluetoothManager {
                 }
             }
             self.attempt = attempt
+            setConnecting(true)
 
             // Without this the restore path has no deadline at all: a connect that never completes
             // leaves the attempt in flight for good, and every later ensureConnected fails.
@@ -570,6 +587,7 @@ extension BluetoothManager {
                 }
             }
             self.attempt = attempt
+            setConnecting(true)
         }
 
         forcedDisconnect = false
@@ -625,14 +643,16 @@ extension BluetoothManager {
             return
         }
 
+        // Before the forcedDisconnect check: skipping it left `isConnected` true for good after a
+        // disconnect we asked for ourselves.
+        if let pumpManager = self.pumpManager, pumpManager.state.isConnected {
+            pumpManager.state.isConnected = false
+            pumpManager.notifyStateDidChange()
+        }
+
         if forcedDisconnect {
             forcedDisconnect = false
             return
-        }
-
-        if let pumpManager = self.pumpManager {
-            pumpManager.state.isConnected = false
-            pumpManager.notifyStateDidChange()
         }
 
         if let peripheralManager = peripheralManager {

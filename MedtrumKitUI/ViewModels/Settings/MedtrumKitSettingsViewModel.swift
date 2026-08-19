@@ -141,7 +141,6 @@ class MedtrumKitSettingsViewModel: PatchLifetimeFormatting, ObservableObject, Pu
             return
         }
 
-        isConnected = pumpManager.bluetooth.isConnected
         updateState(pumpManager.state)
         pumpManager.addStatusObserver(self, queue: processQueue)
     }
@@ -334,11 +333,10 @@ class MedtrumKitSettingsViewModel: PatchLifetimeFormatting, ObservableObject, Pu
         }
 
         if !pumpManager.bluetooth.isConnected {
-            // Reconnect to patch
-            isReconnecting = true
-            pumpManager.bluetooth.ensureConnected { _ in
-                DispatchQueue.main.async {
-                    self.isReconnecting = false
+            // Reconnect to patch. `isReconnecting` follows the attempt itself now.
+            pumpManager.bluetooth.ensureConnected { error in
+                if let error = error {
+                    self.log.error("Failed to reconnect: \(error)")
                 }
             }
             return
@@ -382,12 +380,14 @@ extension MedtrumKitSettingsViewModel {
         }
 
         DispatchQueue.main.async {
-            self.isConnected = pumpManager.bluetooth.isConnected
             self.updateState(pumpManager.state)
         }
     }
 
     private func updateState(_ state: MedtrumPumpState) {
+        isConnected = state.isConnected
+        // Same reading as the navigation bar, so the two never disagree.
+        isReconnecting = state.isConnecting || state.isSearchingForBase
         model = state.model
         switch model {
         case "MD8301":
