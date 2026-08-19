@@ -290,7 +290,12 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
             case let .failure(error):
                 self.logger.error("Error during scanning: \(error.localizedDescription)")
                 self.manager.stopScan()
-                self.finish(attempt, .failedToFindDevice)
+
+                if case let .invalidBluetoothState(state) = error {
+                    self.finish(attempt, .bluetoothUnavailable(state: state))
+                } else {
+                    self.finish(attempt, .failedToFindDevice)
+                }
 
             case let .success(peripheral, pumpSN, _, _):
                 guard pumpSN == pumpSNState else {
@@ -442,6 +447,13 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
 extension BluetoothManager {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         logger.info("\(String(describing: central.state.rawValue))")
+
+        // Publish it before the guard: a manager stuck below .poweredOn is exactly what the UI has
+        // to show, and it never reports again.
+        if let pumpManager = pumpManager, pumpManager.state.bluetoothState != central.state {
+            pumpManager.state.bluetoothState = central.state
+            pumpManager.notifyStateDidChange()
+        }
 
         guard central.state == .poweredOn else {
             return
