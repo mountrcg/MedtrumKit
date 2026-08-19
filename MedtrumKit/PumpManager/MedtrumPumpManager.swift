@@ -42,6 +42,11 @@ public class MedtrumPumpManager: DeviceManager {
         bluetooth.pumpManager = self
     }
 
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+        log.info("MedtrumPumpManager deallocated")
+    }
+
     /// background sync, doesn't lock loops
     static let heartbeatSyncFreshnessInterval: TimeInterval = .minutes(2.5)
 
