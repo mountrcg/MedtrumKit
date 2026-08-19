@@ -684,11 +684,12 @@ struct MedtrumKitSettings: View {
     }
 
     var connectionStatusIcon: some View {
-        let color = viewModel.isReconnecting ? Color.orange : viewModel.isConnected ? Color.green : Color.red
+        // Same antenna the navigation bar shows.
+        let status: MedtrumConnectionStatus = viewModel.isConnected
+            ? .connected
+            : viewModel.isReconnecting ? .connecting : .disconnected
 
-        return Circle()
-            .fill(color)
-            .frame(width: 10, height: 10)
+        return ConnectionStatusIcon(status: status, size: 20)
     }
 
     var deliverySectionTitle: String {
