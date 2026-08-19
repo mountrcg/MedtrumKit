@@ -1,3 +1,4 @@
+import CoreBluetooth
 import LoopKit
 
 public enum BasalState: Int {
@@ -276,6 +277,8 @@ public class MedtrumPumpState: RawRepresentable {
     public var isConnecting: Bool = false
     /// Held across the retries of `startConnectingToBase`, so the status does not blink in the gaps.
     public var isSearchingForBase: Bool = false
+    /// Last state CoreBluetooth reported. Anything but `.poweredOn` means no connect can succeed.
+    public var bluetoothState: CBManagerState = .unknown
     // if it was persisted, and we happen to restore a date - there will be nothing left to reset it to `nil`
     public var cancelingBolusSince: Date?
     // **** END ****
@@ -394,7 +397,8 @@ public class MedtrumPumpState: RawRepresentable {
             "* bolusState: \(bolusState.rawValue)",
             "* isConnected: \(isConnected)",
             "* isConnecting: \(isConnecting)",
-            "* isSearchingForBase: \(isSearchingForBase)"
+            "* isSearchingForBase: \(isSearchingForBase)",
+            "* bluetoothState: \(bluetoothState.rawValue)"
         ].joined(separator: "\n")
     }
 }

@@ -40,6 +40,7 @@ class MedtrumKitSettingsViewModel: PatchLifetimeFormatting, ObservableObject, Pu
     @Published var patchGraceTimeout = ""
     @Published var isConnected: Bool = false
     @Published var isReconnecting: Bool = false
+    @Published var connectionStatus: MedtrumConnectionStatus = .disconnected
     @Published var isUpdatingPumpState = false
     @Published var isUpdatingSuspend = false
     @Published var isUpdatingTempBasal = false
@@ -388,6 +389,7 @@ extension MedtrumKitSettingsViewModel {
         isConnected = state.isConnected
         // Same reading as the navigation bar, so the two never disagree.
         isReconnecting = state.isConnecting || state.isSearchingForBase
+        connectionStatus = MedtrumConnectionStatus(state)
         model = state.model
         switch model {
         case "MD8301":
