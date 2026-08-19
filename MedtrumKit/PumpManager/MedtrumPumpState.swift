@@ -272,6 +272,10 @@ public class MedtrumPumpState: RawRepresentable {
     // **** THESE VALUES SHOULD NOT BE PERSISTED ****
     public var primeProgress: UInt8 = 0
     public var isConnected: Bool = false
+    /// A connect attempt is in flight. `isConnected` only follows once subscribe has completed.
+    public var isConnecting: Bool = false
+    /// Held across the retries of `startConnectingToBase`, so the status does not blink in the gaps.
+    public var isSearchingForBase: Bool = false
     // if it was persisted, and we happen to restore a date - there will be nothing left to reset it to `nil`
     public var cancelingBolusSince: Date?
     // **** END ****
@@ -387,7 +391,10 @@ public class MedtrumPumpState: RawRepresentable {
             "* insulinType: \(String(describing: insulinType))",
             "* reservoirLevel: \(reservoir)",
             "* lowReservoirWarning: \(String(describing: lowReservoirWarning))",
-            "* bolusState: \(bolusState.rawValue)"
+            "* bolusState: \(bolusState.rawValue)",
+            "* isConnected: \(isConnected)",
+            "* isConnecting: \(isConnecting)",
+            "* isSearchingForBase: \(isSearchingForBase)"
         ].joined(separator: "\n")
     }
 }
