@@ -702,9 +702,13 @@ public extension MedtrumPumpManager {
                     return
                 }
 
+                // A central below .poweredOn can never connect - .unsupported never even reports
+                // again. Skip the attempt but keep ticking, so a radio switched back on resumes.
+                let radioUsable = self.state.bluetoothState == .poweredOn || self.state.bluetoothState == .unknown
+
                 // isConnected, not the link: a failed auth flow drops it, so the next pass retries.
                 // `bluetooth` is dropped by forgetBluetoothManager, and this ticks on past it.
-                if !self.state.isConnected, let bluetooth = self.bluetooth {
+                if radioUsable, !self.state.isConnected, let bluetooth = self.bluetooth {
                     await withCheckedContinuation { continuation in
                         bluetooth.ensureConnected { error in
                             if let error = error {

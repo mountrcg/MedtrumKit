@@ -235,6 +235,14 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
             return
         }
 
+        // Nothing below can work with a central that is not powered on: connect() is silently
+        // ignored, so the caller waited out the full 15s for a failure already known here.
+        guard manager.state == .poweredOn else {
+            logger.error("Bluetooth is unavailable: \(manager.state.rawValue)")
+            finish(attempt, .bluetoothUnavailable(state: manager.state))
+            return
+        }
+
         // Past the fast path, so a link that was up all along never reports as connecting.
         setConnecting(true)
 
