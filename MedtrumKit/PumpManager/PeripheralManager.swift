@@ -216,8 +216,7 @@ extension PeripheralManager {
             isReadyStorage = true
             stateLock.unlock()
 
-            pumpManager.state.isConnected = true
-            pumpManager.notifyStateDidChange()
+            pumpManager.updateConnectionStatus { $0.isConnected = true }
             completion?(nil)
         }
     }

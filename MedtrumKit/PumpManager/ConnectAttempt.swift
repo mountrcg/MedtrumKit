@@ -1,5 +1,46 @@
 import Foundation
 
+/// Bridges a callback-owned connection attempt into a task. Cancellation only releases this
+/// waiter; it never completes or cancels the shared BLE attempt other commands may be using.
+final class ConnectionWait {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<MedtrumConnectError?, Never>?
+    private var isFinished = false
+    private var result: MedtrumConnectError?
+
+    func wait() async -> MedtrumConnectError? {
+        await withTaskCancellationHandler(operation: {
+            await withCheckedContinuation { continuation in
+                lock.lock()
+                if isFinished {
+                    let result = result
+                    lock.unlock()
+                    continuation.resume(returning: result)
+                } else {
+                    self.continuation = continuation
+                    lock.unlock()
+                }
+            }
+        }, onCancel: {
+            finish(nil)
+        })
+    }
+
+    func finish(_ result: MedtrumConnectError?) {
+        lock.lock()
+        guard !isFinished else {
+            lock.unlock()
+            return
+        }
+        isFinished = true
+        self.result = result
+        let continuation = continuation
+        self.continuation = nil
+        lock.unlock()
+        continuation?.resume(returning: result)
+    }
+}
+
 /// One connect attempt: the callers waiting on it, and the deadline that guarantees they hear
 /// back. Connect, disconnect, timeout and the auth flow all race to report a result, so the
 /// attempt owns which of them wins rather than each site checking for itself.
