@@ -12,12 +12,16 @@ enum MedtrumConnectionStatus: Equatable {
     case bluetoothUnavailable(CBManagerState)
 
     init(_ state: MedtrumPumpState) {
+        self.init(MedtrumConnectionStatusSnapshot(state))
+    }
+
+    init(_ snapshot: MedtrumConnectionStatusSnapshot) {
         // `.unknown` only means CoreBluetooth has not reported yet, so it is not worth alarming over.
-        if state.bluetoothState != .poweredOn, state.bluetoothState != .unknown {
-            self = .bluetoothUnavailable(state.bluetoothState)
-        } else if state.isConnected {
+        if snapshot.bluetoothState != .poweredOn, snapshot.bluetoothState != .unknown {
+            self = .bluetoothUnavailable(snapshot.bluetoothState)
+        } else if snapshot.isConnected {
             self = .connected
-        } else if state.isConnecting || state.isSearchingForBase {
+        } else if snapshot.isConnecting || snapshot.isSearchingForBase {
             self = .connecting
         } else {
             self = .disconnected
@@ -49,7 +53,7 @@ final class ConnectionStatusViewModel: ObservableObject, PumpManagerStatusObserv
             return
         }
 
-        updateState(pumpManager)
+        updateState(pumpManager.connectionStatusSnapshot)
         pumpManager.addStatusObserver(self, queue: processQueue)
     }
 
@@ -67,12 +71,12 @@ final class ConnectionStatusViewModel: ObservableObject, PumpManagerStatusObserv
         }
 
         DispatchQueue.main.async {
-            self.updateState(pumpManager)
+            self.updateState(pumpManager.connectionStatusSnapshot)
         }
     }
 
-    private func updateState(_ pumpManager: MedtrumPumpManager) {
-        status = MedtrumConnectionStatus(pumpManager.state)
+    private func updateState(_ snapshot: MedtrumConnectionStatusSnapshot) {
+        status = MedtrumConnectionStatus(snapshot)
     }
 }
 

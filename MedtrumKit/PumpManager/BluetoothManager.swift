@@ -116,12 +116,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
     /// Publishes that an attempt is in flight, so the UI can say "connecting" for the seconds the
     /// flow takes. Must be called on `managerQueue`.
     private func setConnecting(_ value: Bool) {
-        guard let pumpManager = pumpManager, pumpManager.state.isConnecting != value else {
-            return
-        }
-
-        pumpManager.state.isConnecting = value
-        pumpManager.notifyStateDidChange()
+        pumpManager?.updateConnectionStatus { $0.isConnecting = value }
     }
 
     /// Reports `attempt` to everyone waiting on it, if nobody has yet. Must be called on
@@ -458,10 +453,7 @@ extension BluetoothManager {
 
         // Publish it before the guard: a manager stuck below .poweredOn is exactly what the UI has
         // to show, and it never reports again.
-        if let pumpManager = pumpManager, pumpManager.state.bluetoothState != central.state {
-            pumpManager.state.bluetoothState = central.state
-            pumpManager.notifyStateDidChange()
-        }
+        pumpManager?.updateConnectionStatus { $0.bluetoothState = central.state }
 
         guard central.state == .poweredOn else {
             return
@@ -656,9 +648,8 @@ extension BluetoothManager {
 
         // Before the forcedDisconnect check: skipping it left `isConnected` true for good after a
         // disconnect we asked for ourselves.
-        if let pumpManager = self.pumpManager, pumpManager.state.isConnected {
-            pumpManager.state.isConnected = false
-            pumpManager.notifyStateDidChange()
+        if let pumpManager = self.pumpManager, pumpManager.connectionStatusSnapshot.isConnected {
+            pumpManager.updateConnectionStatus { $0.isConnected = false }
         }
 
         if forcedDisconnect {
@@ -691,8 +682,7 @@ extension BluetoothManager {
         }
 
         if let pumpManager = self.pumpManager {
-            pumpManager.state.isConnected = false
-            pumpManager.notifyStateDidChange()
+            pumpManager.updateConnectionStatus { $0.isConnected = false }
         }
 
         // The attempt is over, so report it now. Leaving it to the timeout means the caller waits

@@ -3,6 +3,20 @@ import UIKit
 import HealthKit
 import LoopKit
 
+struct MedtrumConnectionStatusSnapshot: Equatable {
+    var isConnected: Bool
+    var isConnecting: Bool
+    var isSearchingForBase: Bool
+    var bluetoothState: CBManagerState
+
+    init(_ state: MedtrumPumpState) {
+        isConnected = state.isConnected
+        isConnecting = state.isConnecting
+        isSearchingForBase = state.isSearchingForBase
+        bluetoothState = state.bluetoothState
+    }
+}
+
 public class MedtrumPumpManager: DeviceManager {
     public static let pluginIdentifier = "Medtrum"
     public let localizedTitle: String = "Medtrum Nano"
@@ -24,10 +38,13 @@ public class MedtrumPumpManager: DeviceManager {
 
     /// Nil whenever the activation flow is not on screen.
     private var baseConnectTask: Task<Void, Never>?
+    private let connectionStatusQueue = DispatchQueue(label: "com.nightscout.MedtrumKit.connectionStatus")
+    private var _connectionStatusSnapshot: MedtrumConnectionStatusSnapshot
 
     init(state: MedtrumPumpState) {
         self.state = state
         oldState = MedtrumPumpState(rawValue: state.rawValue)
+        _connectionStatusSnapshot = MedtrumConnectionStatusSnapshot(state)
         bluetooth = BluetoothManager()
         
         NotificationCenter.default.addObserver(
@@ -53,6 +70,26 @@ public class MedtrumPumpManager: DeviceManager {
     static let loopSyncFreshnessInterval: TimeInterval = .minutes(4.5)
 
     static let patchTimeRefreshInterval: TimeInterval = .minutes(30)
+
+    var connectionStatusSnapshot: MedtrumConnectionStatusSnapshot {
+        connectionStatusQueue.sync { _connectionStatusSnapshot }
+    }
+
+    /// Serializes transient connection-state writes and publishes a single immutable read model.
+    func updateConnectionStatus(_ update: (inout MedtrumConnectionStatusSnapshot) -> Void) {
+        let changed = connectionStatusQueue.sync {
+            var snapshot = _connectionStatusSnapshot
+            update(&snapshot)
+            guard snapshot != _connectionStatusSnapshot else { return false }
+            _connectionStatusSnapshot = snapshot
+            state.isConnected = snapshot.isConnected
+            state.isConnecting = snapshot.isConnecting
+            state.isSearchingForBase = snapshot.isSearchingForBase
+            state.bluetoothState = snapshot.bluetoothState
+            return true
+        }
+        if changed { notifyStateDidChange() }
+    }
 
     public required convenience init?(rawState: RawStateValue) {
         self.init(state: MedtrumPumpState(rawValue: rawState))
@@ -683,30 +720,23 @@ public extension MedtrumPumpManager {
 
         log.info("Start reaching for the pump base...")
 
-        state.isSearchingForBase = true
-        notifyStateDidChange()
+        updateConnectionStatus { $0.isSearchingForBase = true }
 
         baseConnectTask = Task { [weak self] in
             while !Task.isCancelled {
-                guard let self else {
+                let wait: ConnectionWait?
+                if let manager = self {
+                    let snapshot = manager.connectionStatusSnapshot
+                    let radioUsable = snapshot.bluetoothState == .poweredOn || snapshot.bluetoothState == .unknown
+                    wait = radioUsable && !snapshot.isConnected ? manager.startBaseConnectionWait() : nil
+                } else {
                     return
                 }
 
-                // A central below .poweredOn can never connect - .unsupported never even reports
-                // again. Skip the attempt but keep ticking, so a radio switched back on resumes.
-                let radioUsable = self.state.bluetoothState == .poweredOn || self.state.bluetoothState == .unknown
-
-                // isConnected, not the link: a failed auth flow drops it, so the next pass retries.
-                if radioUsable, !self.state.isConnected {
-                    await withCheckedContinuation { continuation in
-                        self.bluetooth.ensureConnected { error in
-                            if let error = error {
-                                self.log.debug("Could not reach the pump base yet: \(error)")
-                            }
-
-                            continuation.resume()
-                        }
-                    }
+                if let wait {
+                    let error = await wait.wait()
+                    guard !Task.isCancelled else { return }
+                    if let error { self?.log.debug("Could not reach the pump base yet: \(error)") }
                 }
 
                 // Only paces the attempts that fail fast; a scan has already spent its 15s.
@@ -726,8 +756,15 @@ public extension MedtrumPumpManager {
         baseConnectTask?.cancel()
         baseConnectTask = nil
 
-        state.isSearchingForBase = false
-        notifyStateDidChange()
+        updateConnectionStatus { $0.isSearchingForBase = false }
+    }
+
+    private func startBaseConnectionWait() -> ConnectionWait {
+        let wait = ConnectionWait()
+        bluetooth.ensureConnected { error in
+            wait.finish(error)
+        }
+        return wait
     }
 
     func primePatch(_ completion: @escaping (MedtrumPrimePatchResult) -> Void) {

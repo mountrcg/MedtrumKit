@@ -142,7 +142,7 @@ class MedtrumKitSettingsViewModel: PatchLifetimeFormatting, ObservableObject, Pu
             return
         }
 
-        updateState(pumpManager.state)
+        updateState(pumpManager.state, connection: pumpManager.connectionStatusSnapshot)
         pumpManager.addStatusObserver(self, queue: processQueue)
     }
 
@@ -380,16 +380,21 @@ extension MedtrumKitSettingsViewModel {
             return
         }
 
+        // Read the synchronized snapshot at the callback boundary, before hopping to main, so the
+        // settings status is derived from the same immutable read model as ConnectionStatusViewModel
+        // rather than from a later, racy read of `pumpManager.state` on the main queue.
+        let snapshot = pumpManager.connectionStatusSnapshot
         DispatchQueue.main.async {
-            self.updateState(pumpManager.state)
+            self.updateState(pumpManager.state, connection: snapshot)
         }
     }
 
-    private func updateState(_ state: MedtrumPumpState) {
-        isConnected = state.isConnected
+    private func updateState(_ state: MedtrumPumpState, connection snapshot: MedtrumConnectionStatusSnapshot) {
+        // Status-only fields come solely from the synchronized snapshot.
+        isConnected = snapshot.isConnected
         // Same reading as the navigation bar, so the two never disagree.
-        isReconnecting = state.isConnecting || state.isSearchingForBase
-        connectionStatus = MedtrumConnectionStatus(state)
+        isReconnecting = snapshot.isConnecting || snapshot.isSearchingForBase
+        connectionStatus = MedtrumConnectionStatus(snapshot)
         model = state.model
         switch model {
         case "MD8301":
