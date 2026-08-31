@@ -51,6 +51,24 @@ final class ConnectionStatusTests: XCTestCase {
         XCTAssertEqual(MedtrumConnectionStatus(snapshot()), .disconnected)
     }
 
+    func testClearPeripheralPublishesDisconnectedSnapshot() {
+        let manager = MedtrumPumpManager(state: MedtrumPumpState(rawValue: [:]))
+        manager.updateConnectionStatus { $0.isConnected = true }
+        XCTAssertTrue(manager.connectionStatusSnapshot.isConnected)
+
+        let snapshotDidDisconnect = expectation(description: "clear publishes disconnected snapshot")
+        DispatchQueue.global().async {
+            while manager.connectionStatusSnapshot.isConnected {
+                Thread.sleep(forTimeInterval: 0.01)
+            }
+            snapshotDidDisconnect.fulfill()
+        }
+
+        manager.bluetooth.clearPeripheral()
+        wait(for: [snapshotDidDisconnect], timeout: 1)
+        XCTAssertFalse(manager.connectionStatusSnapshot.isConnected)
+    }
+
     // MARK: - ConnectionWait cancellation contract
 
     func testNormalFinishDeliversResult() async {
