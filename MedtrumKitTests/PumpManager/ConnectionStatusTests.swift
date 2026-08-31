@@ -58,10 +58,14 @@ final class ConnectionStatusTests: XCTestCase {
 
         let snapshotDidDisconnect = expectation(description: "clear publishes disconnected snapshot")
         DispatchQueue.global().async {
-            while manager.connectionStatusSnapshot.isConnected {
+            let deadline = Date().addingTimeInterval(0.9)
+            while Date() < deadline {
+                if !manager.connectionStatusSnapshot.isConnected {
+                    snapshotDidDisconnect.fulfill()
+                    return
+                }
                 Thread.sleep(forTimeInterval: 0.01)
             }
-            snapshotDidDisconnect.fulfill()
         }
 
         manager.bluetooth.clearPeripheral()
