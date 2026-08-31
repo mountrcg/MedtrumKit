@@ -423,6 +423,19 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         }
         scanCompletion = nil
 
+        // Drop the stored identifier before flipping the connection status so the disconnected
+        // notification below already carries the final, identifier-less state. Otherwise a clear
+        // from connected with a stored identifier would publish twice: once for the status flip and
+        // once more for the identifier drop.
+        let hadIdentifier = pumpManager?.state.peripheralIdentifier != nil
+        if hadIdentifier {
+            pumpManager?.state.peripheralIdentifier = nil
+        }
+
+        // updateConnectionStatus publishes exactly one notification when it flips isConnected, so it
+        // already covers the connected case. When the status was already disconnected it stays
+        // silent, and an identifier-only drop still has to publish its own single notification.
+        let wasConnected = pumpManager?.connectionStatusSnapshot.isConnected ?? false
         pumpManager?.updateConnectionStatus { $0.isConnected = false }
 
         peripheral = nil
@@ -432,8 +445,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         peripheralManager?.cleanup()
         peripheralManager = nil
 
-        if pumpManager?.state.peripheralIdentifier != nil {
-            pumpManager?.state.peripheralIdentifier = nil
+        if hadIdentifier, !wasConnected {
             pumpManager?.notifyStateDidChange()
         }
 

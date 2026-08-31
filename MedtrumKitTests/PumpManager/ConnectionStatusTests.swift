@@ -1,4 +1,5 @@
 import CoreBluetooth
+import LoopKit
 @testable import MedtrumKit
 import XCTest
 
@@ -73,6 +74,39 @@ final class ConnectionStatusTests: XCTestCase {
         XCTAssertFalse(manager.connectionStatusSnapshot.isConnected)
     }
 
+    /// Clearing from a connected state while a `peripheralIdentifier` is stored used to publish two
+    /// state notifications: one for the `isConnected` flip and a second for dropping the identifier.
+    /// The clear must coalesce both into a single notification that already reflects the final,
+    /// disconnected, identifier-less state.
+    func testClearFromConnectedWithStoredIdentifierPublishesSingleFinalNotification() {
+        let manager = MedtrumPumpManager(state: MedtrumPumpState(rawValue: [:]))
+        manager.state.peripheralIdentifier = UUID()
+        manager.updateConnectionStatus { $0.isConnected = true }
+        XCTAssertTrue(manager.connectionStatusSnapshot.isConnected)
+        XCTAssertNotNil(manager.state.peripheralIdentifier)
+
+        let observer = NotificationCountingObserver()
+        manager.addStatusObserver(observer, queue: .main)
+
+        manager.bluetooth.clearPeripheral()
+
+        // Let the async clear run and every main-queue notification it enqueues settle, then drain
+        // the main queue once more so a stray second notification would have been counted by now.
+        let settled = expectation(description: "clear and its notifications settle")
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) { settled.fulfill() }
+        wait(for: [settled], timeout: 1)
+        let drained = expectation(description: "main queue drained")
+        DispatchQueue.main.async { drained.fulfill() }
+        wait(for: [drained], timeout: 1)
+
+        XCTAssertEqual(observer.updateCount, 1, "clear must publish exactly one state notification")
+        XCTAssertFalse(manager.connectionStatusSnapshot.isConnected)
+        XCTAssertNil(manager.state.peripheralIdentifier)
+        // The lone notification observed the already-consolidated final state.
+        XCTAssertEqual(observer.isConnectedAtNotification, [false])
+        XCTAssertEqual(observer.identifierPresentAtNotification, [false])
+    }
+
     // MARK: - ConnectionWait cancellation contract
 
     func testNormalFinishDeliversResult() async {
@@ -109,5 +143,20 @@ final class ConnectionStatusTests: XCTestCase {
         // A completion that lands after cancellation must be dropped, never re-resuming the already
         // finished continuation.
         wait.finish(.failedToConnectToDevice)
+    }
+}
+
+/// Records every `didUpdate` callback so a test can assert the exact number of published state
+/// notifications and the connection state visible at each one.
+private final class NotificationCountingObserver: PumpManagerStatusObserver {
+    private(set) var updateCount = 0
+    private(set) var isConnectedAtNotification: [Bool] = []
+    private(set) var identifierPresentAtNotification: [Bool] = []
+
+    func pumpManager(_ pumpManager: PumpManager, didUpdate _: PumpManagerStatus, oldStatus _: PumpManagerStatus) {
+        updateCount += 1
+        guard let manager = pumpManager as? MedtrumPumpManager else { return }
+        isConnectedAtNotification.append(manager.connectionStatusSnapshot.isConnected)
+        identifierPresentAtNotification.append(manager.state.peripheralIdentifier != nil)
     }
 }
