@@ -423,7 +423,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         }
         scanCompletion = nil
 
-        pumpManager?.state.isConnected = false
+        pumpManager?.updateConnectionStatus { $0.isConnected = false }
 
         peripheral = nil
         // didDisconnectPeripheral returns early on a forced disconnect, so this is the only place
