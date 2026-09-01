@@ -61,6 +61,7 @@ public class MedtrumPumpManager: DeviceManager {
         )
 
         bluetooth.pumpManager = self
+        bluetooth.publishCurrentBluetoothState()
     }
 
     /// background sync, doesn't lock loops
@@ -726,6 +727,12 @@ public extension MedtrumPumpManager {
             while !Task.isCancelled {
                 let wait: ConnectionWait?
                 if let manager = self {
+                    // The active-patch reconnect owner takes over once activation succeeds.
+                    guard manager.state.pumpState.rawValue < PatchState.active.rawValue else {
+                        manager.stopConnectingToBase()
+                        return
+                    }
+
                     let snapshot = manager.connectionStatusSnapshot
                     let radioUsable = snapshot.bluetoothState == .poweredOn || snapshot.bluetoothState == .unknown
                     wait = radioUsable && !snapshot.isConnected ? manager.startBaseConnectionWait() : nil

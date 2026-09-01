@@ -23,6 +23,7 @@ class PatchActivationViewModel: ObservableObject {
                 pumpManager.state.patchActivatedAt = Date.now
                 pumpManager.state.lastSync = Date.now
                 pumpManager.notifyStateDidChange()
+                pumpManager.stopConnectingToBase()
             }
 
             nextStep()
@@ -42,6 +43,7 @@ class PatchActivationViewModel: ObservableObject {
                         return
                     }
 
+                    pumpManager.stopConnectingToBase()
                     self.nextStep()
                 }
             }

@@ -45,6 +45,18 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
         }
     }
 
+    /// CoreBluetooth can report its initial state before `MedtrumPumpManager` has finished wiring
+    /// itself to us. Publish the current value again once that owner is available.
+    func publishCurrentBluetoothState() {
+        managerQueue.async { [weak self] in
+            guard let self else {
+                return
+            }
+
+            self.pumpManager?.updateConnectionStatus { $0.bluetoothState = self.manager.state }
+        }
+    }
+
     private func startScan(_ completion: @escaping (_ result: MedtrumScanResult) -> Void) {
         if let pumpManager = self.pumpManager, pumpManager.state.pumpSN.isEmpty {
             completion(.failure(error: .noSerialNumberAvailable))
@@ -156,6 +168,13 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
 
     /// Must be called on `managerQueue`.
     private func scheduleReconnect() {
+        // Do not keep scheduling a central that cannot accept a connection. A state transition back
+        // to poweredOn starts the active-patch reconnect path, while the onboarding loop will resume
+        // its own foreground attempts.
+        guard manager.state == .poweredOn else {
+            return
+        }
+
         // `ensureConnectedOnQueue` can retrieve the peripheral from stored identifier
         guard peripheral != nil || pumpManager?.state.peripheralIdentifier != nil else {
             // otherwise we would be retrying a scan, which doesn't work in the background
@@ -184,6 +203,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
 
             managerQueue.async {
                 guard self.attempt == nil,
+                      self.manager.state == .poweredOn,
                       !self.isConnectedOnQueue,
                       self.peripheral != nil || self.pumpManager?.state.peripheralIdentifier != nil
                 else {

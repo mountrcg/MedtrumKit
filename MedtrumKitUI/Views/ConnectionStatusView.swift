@@ -70,8 +70,9 @@ final class ConnectionStatusViewModel: ObservableObject, PumpManagerStatusObserv
             return
         }
 
+        let snapshot = pumpManager.connectionStatusSnapshot
         DispatchQueue.main.async {
-            self.updateState(pumpManager.connectionStatusSnapshot)
+            self.updateState(snapshot)
         }
     }
 
