@@ -44,6 +44,7 @@ public class MedtrumPumpManager: DeviceManager {
         )
 
         bluetooth.pumpManager = self
+        MedtrumLogger.pumpManager = self
     }
 
     deinit {
