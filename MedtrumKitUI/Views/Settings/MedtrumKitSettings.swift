@@ -690,24 +690,17 @@ struct MedtrumKitSettings: View {
         }
     }
 
+    private var connectionStatus: MedtrumConnectionStatus {
+        MedtrumConnectionStatus(isConnected: viewModel.isConnected, isReconnecting: viewModel.isReconnecting)
+    }
+
     var connectionStatusText: some View {
-        if viewModel.isConnected {
-            return Text("Connected", comment: "label for connected")
-        }
-
-        if viewModel.isReconnecting {
-            return Text("Reconnecting...", comment: "label for reconnecting")
-        }
-
-        return Text("Disconnected", comment: "label for disconnected")
+        MedtrumConnectionStatusLabel.text(for: connectionStatus)
     }
 
     var connectionStatusIcon: some View {
-        let color = viewModel.isReconnecting ? Color.orange : viewModel.isConnected ? Color.green : Color.red
-
-        return Circle()
-            .fill(color)
-            .frame(width: 10, height: 10)
+        // Same antenna the navigation bar shows.
+        ConnectionStatusIcon(status: connectionStatus, size: 20)
     }
 
     var deliverySectionTitle: String {

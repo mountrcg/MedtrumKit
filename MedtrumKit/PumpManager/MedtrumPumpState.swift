@@ -282,6 +282,8 @@ public class MedtrumPumpState: RawRepresentable {
     // **** THESE VALUES SHOULD NOT BE PERSISTED ****
     public var primeProgress: UInt8 = 0
     public var isConnected: Bool = false
+    /// The onboarding screens are trying to reach the base. Only drives the status icon.
+    public var isSearchingForBase: Bool = false
     // if it was persisted, and we happen to restore a date - there will be nothing left to reset it to `nil`
     public var cancelingBolusSince: Date?
     // **** END ****

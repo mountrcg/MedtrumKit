@@ -60,6 +60,10 @@ class PumpBaseSettingsViewModel: ObservableObject {
 
         pumpManager.state.isOnboarded = true
         pumpManager.notifyStateDidChange()
+
+        // The serial number is all a connect needs, so the next screens can show whether it answered.
+        pumpManager.startConnectingToBase()
+
         nextStep()
     }
 }

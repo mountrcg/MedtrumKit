@@ -34,6 +34,10 @@ public class MedtrumPumpManager: DeviceManager {
     }
 
     var bluetooth: BluetoothManager!
+
+    /// Nil whenever the activation flow is not on screen. Only touched on the main thread.
+    private var baseConnectTask: Task<Void, Never>?
+
     init(state: MedtrumPumpState) {
         self.state = state
         oldState = MedtrumPumpState(rawValue: state.rawValue)
@@ -63,6 +67,8 @@ public class MedtrumPumpManager: DeviceManager {
     }
 
     public func forgetBluetoothManager() {
+        // The onboarding connect loop uses `bluetooth`; stop it before the manager goes away.
+        stopConnectingToBase()
         bluetooth?.pumpManager = nil
         bluetooth = nil
     }
@@ -693,6 +699,72 @@ public extension MedtrumPumpManager {
     ) {
         log.warning("Skipping sync delivery limits (not supported by Medtrum)")
         completion(.success(limits))
+    }
+
+    /// Tries to reach the base while a new patch is being set up, so the onboarding screens show a
+    /// live status from the moment a serial number is known. Only uses the regular `ensureConnected`.
+    func startConnectingToBase() {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { self.startConnectingToBase() }
+            return
+        }
+
+        guard baseConnectTask == nil, !state.pumpSN.isEmpty, state.pumpState.isSetup else {
+            return
+        }
+
+        log.info("Start reaching for the pump base...")
+        state.isSearchingForBase = true
+        notifyStateDidChange()
+
+        baseConnectTask = Task { [weak self] in
+            while !Task.isCancelled {
+                // Once the patch runs, the regular reconnect logic owns the link.
+                guard let bluetooth = self?.bluetoothForBaseConnect() else {
+                    break
+                }
+
+                if !bluetooth.isConnected {
+                    let error: MedtrumConnectError? = await withCheckedContinuation { continuation in
+                        bluetooth.ensureConnected { continuation.resume(returning: $0) }
+                    }
+                    if let error {
+                        self?.log.debug("Could not reach the pump base yet: \(error)")
+                    }
+                }
+
+                // Paces attempts that fail fast; a scan has already spent its own timeout.
+                try? await Task.sleep(nanoseconds: 3 * NSEC_PER_SEC)
+            }
+
+            if !Task.isCancelled {
+                DispatchQueue.main.async { self?.stopConnectingToBase() }
+            }
+        }
+    }
+
+    /// Nil once the patch is past setup or the Bluetooth manager is gone.
+    private func bluetoothForBaseConnect() -> BluetoothManager? {
+        state.pumpState.isSetup ? bluetooth : nil
+    }
+
+    /// Stops the retries. A link that is already up stays up.
+    func stopConnectingToBase() {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { self.stopConnectingToBase() }
+            return
+        }
+
+        guard baseConnectTask != nil else {
+            return
+        }
+
+        log.info("Stop reaching for the pump base")
+        baseConnectTask?.cancel()
+        baseConnectTask = nil
+
+        state.isSearchingForBase = false
+        notifyStateDidChange()
     }
 
     func primePatch(_ completion: @escaping (MedtrumPrimePatchResult) -> Void) {
