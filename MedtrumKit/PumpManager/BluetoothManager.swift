@@ -436,6 +436,9 @@ extension BluetoothManager {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         logger.info("\(String(describing: central.state.rawValue))")
 
+        // Lets the connection status icon follow Bluetooth being switched off, denied or unusable.
+        pumpManager?.notifyStateDidChange()
+
         guard central.state == .poweredOn else {
             return
         }

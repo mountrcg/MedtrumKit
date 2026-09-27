@@ -1,3 +1,4 @@
+import CoreBluetooth
 import LoopKit
 import SwiftUI
 import UIKit
@@ -7,25 +8,33 @@ enum MedtrumConnectionStatus: Equatable {
     case connected
     case connecting
     case disconnected
+    /// CoreBluetooth itself is unusable, so no connect can succeed until the user acts.
+    case bluetoothUnavailable(CBManagerState)
 
-    init(_ state: MedtrumPumpState) {
-        if state.isConnected {
-            self = .connected
-        } else if state.isSearchingForBase {
-            self = .connecting
-        } else {
-            self = .disconnected
-        }
+    init(_ state: MedtrumPumpState, bluetoothState: CBManagerState) {
+        self.init(isConnected: state.isConnected, isReconnecting: state.isSearchingForBase, bluetoothState: bluetoothState)
     }
 
-    init(isConnected: Bool, isReconnecting: Bool) {
-        if isConnected {
+    init(isConnected: Bool, isReconnecting: Bool, bluetoothState: CBManagerState) {
+        // `.unknown` only means CoreBluetooth has not reported yet, so it is not worth alarming over.
+        if bluetoothState != .poweredOn, bluetoothState != .unknown {
+            self = .bluetoothUnavailable(bluetoothState)
+        } else if isConnected {
             self = .connected
         } else if isReconnecting {
             self = .connecting
         } else {
             self = .disconnected
         }
+    }
+
+    /// CoreBluetooth is stuck where only a relaunch helps - `.unsupported` never reports again.
+    var needsAppRestart: Bool {
+        guard case let .bluetoothUnavailable(state) = self else {
+            return false
+        }
+
+        return state != .poweredOff && state != .unauthorized
     }
 }
 
@@ -44,7 +53,7 @@ final class ConnectionStatusViewModel: ObservableObject, PumpManagerStatusObserv
             return
         }
 
-        updateState(MedtrumConnectionStatus(pumpManager.state))
+        updateState(MedtrumConnectionStatus(pumpManager.state, bluetoothState: pumpManager.bluetoothState))
         pumpManager.addStatusObserver(self, queue: processQueue)
     }
 
@@ -61,7 +70,7 @@ final class ConnectionStatusViewModel: ObservableObject, PumpManagerStatusObserv
             return
         }
 
-        let status = MedtrumConnectionStatus(pumpManager.state)
+        let status = MedtrumConnectionStatus(pumpManager.state, bluetoothState: pumpManager.bluetoothState)
         DispatchQueue.main.async {
             self.updateState(status)
         }
@@ -85,6 +94,7 @@ struct ConnectionStatusIcon: View {
             .foregroundStyle(
                 LinearGradient(colors: gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
             )
+            .connectionStatusBreathe(isActive: status.needsAppRestart)
     }
 
     /// The circle closes only once the patch is reachable, so the shape carries the state too.
@@ -94,7 +104,8 @@ struct ConnectionStatusIcon: View {
             return "antenna.radiowaves.left.and.right.circle"
         case .connecting:
             return "antenna.radiowaves.left.and.right"
-        case .disconnected:
+        case .bluetoothUnavailable,
+             .disconnected:
             return "antenna.radiowaves.left.and.right.slash"
         }
     }
@@ -108,10 +119,14 @@ struct ConnectionStatusIcon: View {
             return [.statusTint, .statusTeal]
         case .disconnected:
             return [.statusRed, Color.statusRed.opacity(0.6)]
+        case .bluetoothUnavailable:
+            // Amber, not red: nothing is wrong with the patch, the phone is what needs attention.
+            return [.statusOrange, .statusWarning]
         }
     }
 }
 
+/// The label says what to do, not just what happened - a stuck Bluetooth stack is the user's to fix.
 enum MedtrumConnectionStatusLabel {
     static func text(for status: MedtrumConnectionStatus) -> Text {
         switch status {
@@ -121,6 +136,16 @@ enum MedtrumConnectionStatusLabel {
             return Text("Connecting...", comment: "label for connecting")
         case .disconnected:
             return Text("Disconnected", comment: "label for disconnected")
+        case let .bluetoothUnavailable(state):
+            switch state {
+            case .poweredOff:
+                return Text("Bluetooth off", comment: "label for bluetooth powered off")
+            case .unauthorized:
+                return Text("Allow Bluetooth", comment: "label for bluetooth unauthorized")
+            default:
+                // .unsupported is terminal: CoreBluetooth never reports again on this manager.
+                return Text("Restart app", comment: "label for bluetooth unusable")
+            }
         }
     }
 }
@@ -146,6 +171,20 @@ struct ConnectionStatusView: View {
     }
 }
 
+private extension View {
+    /// Breathes only where the user has to act. Breathe needs iOS 18, pulse 17.
+    @ViewBuilder func connectionStatusBreathe(isActive: Bool) -> some View {
+        if #available(iOS 18.0, *) {
+            symbolEffect(.breathe.wholeSymbol, options: .speed(1.2).repeating, isActive: isActive)
+                .animation(.smooth(duration: 0.50), value: isActive)
+        } else if #available(iOS 17.0, *) {
+            symbolEffect(.pulse, options: .speed(1.2).repeating, isActive: isActive)
+        } else {
+            self
+        }
+    }
+}
+
 /// The host app's palette by hand: this framework cannot reach its asset catalogue. Mirrors its
 /// tab bar, teal, green and red colours, dark variants included.
 private extension Color {
@@ -154,6 +193,8 @@ private extension Color {
     static let statusGreen = Color(statusHex: 0x6FCF_97)
     static let statusDeepGreen = statusAdaptive(light: 0x2A9F_47, dark: UIColor(statusHex: 0x26A7_46))
     static let statusRed = Color(statusHex: 0xEB57_57)
+    static let statusWarning = Color(statusHex: 0xEAC3_45)
+    static let statusOrange = statusAdaptive(light: 0xFF8C_42, dark: UIColor(statusHex: 0xFF9B_56))
 
     /// Not `adaptive`, which collides with a member of `Color` in the iOS 26 SDK.
     static func statusAdaptive(light: UInt32, dark: UIColor) -> Color {

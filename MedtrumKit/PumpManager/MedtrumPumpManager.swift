@@ -724,7 +724,12 @@ public extension MedtrumPumpManager {
                     break
                 }
 
-                if !bluetooth.isConnected {
+                // A central that is not powered on ignores connect(), so an attempt would only wait
+                // out its timeout. `.unknown` is the brief moment before CoreBluetooth reports.
+                let central = bluetooth.manager?.state ?? .unknown
+                let radioUsable = central == .poweredOn || central == .unknown
+
+                if radioUsable, !bluetooth.isConnected {
                     let error: MedtrumConnectError? = await withCheckedContinuation { continuation in
                         bluetooth.ensureConnected { continuation.resume(returning: $0) }
                     }
@@ -741,6 +746,11 @@ public extension MedtrumPumpManager {
                 DispatchQueue.main.async { self?.stopConnectingToBase() }
             }
         }
+    }
+
+    /// What CoreBluetooth last reported; `.unknown` until the central exists.
+    var bluetoothState: CBManagerState {
+        bluetooth?.manager?.state ?? .unknown
     }
 
     /// Nil once the patch is past setup or the Bluetooth manager is gone.

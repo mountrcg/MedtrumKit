@@ -691,7 +691,11 @@ struct MedtrumKitSettings: View {
     }
 
     private var connectionStatus: MedtrumConnectionStatus {
-        MedtrumConnectionStatus(isConnected: viewModel.isConnected, isReconnecting: viewModel.isReconnecting)
+        MedtrumConnectionStatus(
+            isConnected: viewModel.isConnected,
+            isReconnecting: viewModel.isReconnecting,
+            bluetoothState: viewModel.bluetoothState
+        )
     }
 
     var connectionStatusText: some View {
