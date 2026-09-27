@@ -743,7 +743,8 @@ public extension MedtrumPumpManager {
             }
 
             if !Task.isCancelled {
-                DispatchQueue.main.async { self?.stopConnectingToBase() }
+                // Hops to the main thread itself.
+                self?.stopConnectingToBase()
             }
         }
     }
