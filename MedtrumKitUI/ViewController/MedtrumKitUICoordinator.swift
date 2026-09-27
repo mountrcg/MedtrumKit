@@ -28,6 +28,7 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
     private let logger = MedtrumLogger(category: "MedtrumKitUICoordinator")
 
     deinit {
+        pumpManager?.stopConnectingToBase()
         logger.info("MedtrumKitUICoordinator deallocated")
     }
 
@@ -335,10 +336,6 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
         UIApplication.shared.isIdleTimerDisabled = false
 
         // Scanning only finds anything in the foreground, and nobody is left to show it to.
-        pumpManager?.stopConnectingToBase()
-    }
-
-    deinit {
         pumpManager?.stopConnectingToBase()
     }
 
