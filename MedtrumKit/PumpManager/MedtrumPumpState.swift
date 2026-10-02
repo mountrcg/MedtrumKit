@@ -283,6 +283,8 @@ public class MedtrumPumpState: RawRepresentable {
     // **** THESE VALUES SHOULD NOT BE PERSISTED ****
     public var primeProgress: UInt8 = 0
     public var isConnected: Bool = false
+    /// The first connect to a newly saved base is running. Only drives the status icon.
+    public var isSearchingForBase: Bool = false
     // if it was persisted, and we happen to restore a date - there will be nothing left to reset it to `nil`
     public var cancelingBolusSince: Date?
     // last state CoreBluetooth reported
