@@ -34,6 +34,9 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
     var pumpManagerOnboardingDelegate: (any LoopKitUI.PumpManagerOnboardingDelegate)?
     var completionDelegate: (any LoopKitUI.CompletionDelegate)?
 
+    /// Shared by every hosted screen, so the navigation bar reads the same throughout the flow.
+    private lazy var connectionStatusViewModel = ConnectionStatusViewModel(pumpManager)
+
     var screenStack = [MedtrumUIScreen]()
     var currentScreen: MedtrumUIScreen {
         screenStack.last!
@@ -164,7 +167,8 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
                     viewModel: viewModel,
                     doDirtyCheck: dirtyCheck
                 ),
-                title: String(localized: "Patch Settings", comment: "Text for patch settings view")
+                title: String(localized: "Patch Settings", comment: "Text for patch settings view"),
+                showsConnectionStatus: true
             )
 
         case .deactivatePatchScreen:
@@ -172,7 +176,8 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
             let viewModel = DeactivatePatchViewModel(pumpManager, nextStep)
             return hostingController(
                 rootView: PatchDeactivationView(viewModel: viewModel),
-                title: String(localized: "Deactivate Patch", comment: "deactive patch")
+                title: String(localized: "Deactivate Patch", comment: "deactive patch"),
+                showsConnectionStatus: true
             )
 
         case .pumpBaseSettingsScreen:
@@ -196,7 +201,8 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
 
             return hostingController(
                 rootView: PumpBaseSettingsView(viewModel: viewModel),
-                title: String(localized: "Pump base settings", comment: "Pump base settings header")
+                title: String(localized: "Pump base settings", comment: "Pump base settings header"),
+                showsConnectionStatus: true
             )
 
         case .patchPrimingScreen:
@@ -209,7 +215,8 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
                 rootView: PatchPrimingView(viewModel: viewModel)
                     .onAppear { UIApplication.shared.isIdleTimerDisabled = true },
                 title: String(localized: "Patch Priming", comment: "Priming header"),
-                largeTitleDisplayMode: .never
+                largeTitleDisplayMode: .never,
+                showsConnectionStatus: true
             )
 
         case .patchActivationScreen:
@@ -221,7 +228,8 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
                 rootView: PatchActivationView(viewModel: viewModel)
                     .onAppear { UIApplication.shared.isIdleTimerDisabled = true },
                 title: String(localized: "Patch Activation", comment: "Patch activation header"),
-                largeTitleDisplayMode: .never
+                largeTitleDisplayMode: .never,
+                showsConnectionStatus: true
             )
 
         case .settingsScreen:
@@ -299,10 +307,15 @@ class MedtrumKitUICoordinator: UINavigationController, PumpManagerOnboarding, Co
     private func hostingController<Content: View>(
         rootView: Content,
         title: String? = nil,
-        largeTitleDisplayMode: UINavigationItem.LargeTitleDisplayMode = .automatic
+        largeTitleDisplayMode: UINavigationItem.LargeTitleDisplayMode = .automatic,
+        showsConnectionStatus: Bool = false
     ) -> DismissibleHostingController<some View> {
+        // Only the screens that talk to the pump base carry the status, and only once a serial
+        // number exists - before that there is no link to be up or down.
+        let hasPumpSN = !(pumpManager?.state.pumpSN.isEmpty ?? true)
         let rootView = rootView
             .environment(\.appName, Bundle.main.bundleDisplayName)
+            .connectionStatusBar(connectionStatusViewModel, isEnabled: showsConnectionStatus && hasPumpSN)
         let hostedView = DismissibleHostingController(content: rootView, colorPalette: colorPalette)
         hostedView.navigationItem.title = title
         hostedView.navigationItem.largeTitleDisplayMode = largeTitleDisplayMode
