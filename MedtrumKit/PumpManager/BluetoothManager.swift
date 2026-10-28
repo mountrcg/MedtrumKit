@@ -1,7 +1,15 @@
 import CoreBluetooth
 
 class BluetoothManager: NSObject, CBCentralManagerDelegate {
-    public weak var pumpManager: MedtrumPumpManager?
+    public weak var pumpManager: MedtrumPumpManager? {
+        didSet {
+            // The first state report usually arrives before this is set - see `identifierAtLaunch` -
+            // and would otherwise never be recorded if the radio does not change afterwards.
+            managerQueue.async {
+                self.recordBluetoothState()
+            }
+        }
+    }
 
     let logger = MedtrumLogger(category: "BluetoothManager")
 
@@ -433,8 +441,20 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate {
 }
 
 extension BluetoothManager {
+    /// Must be called on `managerQueue`.
+    private func recordBluetoothState() {
+        guard let pumpManager, pumpManager.state.bluetoothState != manager.state else {
+            return
+        }
+
+        pumpManager.state.bluetoothState = manager.state
+        pumpManager.notifyStateDidChange()
+    }
+
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         logger.info("\(String(describing: central.state.rawValue))")
+
+        recordBluetoothState()
 
         guard central.state == .poweredOn else {
             // CBPeripheral is invalid after a reset or when Bluetooth is unusable, need to retrieve it again

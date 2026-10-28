@@ -1,3 +1,4 @@
+import CoreBluetooth
 import LoopKit
 import LoopKitUI
 import SwiftUI
@@ -40,6 +41,7 @@ class MedtrumKitSettingsViewModel: PatchLifetimeFormatting, ObservableObject, Pu
     @Published var patchGraceTimeout = ""
     @Published var isConnected: Bool = false
     @Published var isReconnecting: Bool = false
+    @Published var bluetoothState: CBManagerState = .unknown
     @Published var isUpdatingPumpState = false
     @Published var isUpdatingSuspend = false
     @Published var isUpdatingTempBasal = false
@@ -142,6 +144,7 @@ class MedtrumKitSettingsViewModel: PatchLifetimeFormatting, ObservableObject, Pu
         }
 
         isConnected = pumpManager.bluetooth.isConnected
+        bluetoothState = pumpManager.state.bluetoothState
         updateState(pumpManager.state)
         pumpManager.addStatusObserver(self, queue: processQueue)
     }
@@ -382,6 +385,7 @@ extension MedtrumKitSettingsViewModel {
 
         DispatchQueue.main.async {
             self.isConnected = pumpManager.bluetooth.isConnected
+            self.bluetoothState = pumpManager.state.bluetoothState
             self.updateState(pumpManager.state)
         }
     }
