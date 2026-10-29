@@ -7,7 +7,7 @@ struct PatchPrimingView: View {
     @State private var showingSteps = false
 
     var body: some View {
-        VStack(spacing: 0) {
+        GuidePage(content: {
             PatchOverviewContent(assetName: "step_fill_patch") {
                 Text("Fill and Prime the Patch", comment: "Title of the patch priming screen")
                     .font(.title2)
@@ -36,23 +36,22 @@ struct PatchPrimingView: View {
                 }
                 .buttonStyle(.bordered)
             }
-
+            // Floor against the hosting List proposing a GeometryReader-based row a near-zero height.
+            .frame(minHeight: 400)
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+        }) {
             VStack(spacing: 12) {
                 statusSection
 
-                if viewModel.isPriming {
-                    ProgressView(progress: viewModel.primeProgress)
-                }
+                ProgressIndicatorView(state: progressState)
 
                 Button(action: { viewModel.startPrime() }) {
-                    if viewModel.isPriming {
-                        ActivityIndicator()
-                    } else {
-                        Text("Start priming", comment: "label for prime start action")
-                    }
+                    Text("Start priming", comment: "label for prime start action")
+                        .actionButtonStyle(.primary)
                 }
                 .disabled(!viewModel.canStartPriming)
-                .buttonStyle(ActionButtonStyle())
             }
             .padding()
         }
@@ -67,6 +66,10 @@ struct PatchPrimingView: View {
                 didFinish: { showingSteps = false }
             )
         }
+    }
+
+    private var progressState: ProgressIndicatorState {
+        viewModel.isPriming ? .indeterminantProgress : .hidden
     }
 
     @ViewBuilder private var statusSection: some View {
@@ -110,11 +113,6 @@ struct PatchPrimingView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
     }
 }

@@ -8,7 +8,7 @@ struct PatchActivationView: View {
     @State private var showingSteps = false
 
     var body: some View {
-        VStack(spacing: 0) {
+        GuidePage(content: {
             PatchOverviewContent(assetName: "step_insert_needle") {
                 Text("Attach and Activate the Patch", comment: "Title of the patch activation screen")
                     .font(.title2)
@@ -32,24 +32,28 @@ struct PatchActivationView: View {
                 }
                 .buttonStyle(.bordered)
             }
-
+            // Floor against the hosting List proposing a GeometryReader-based row a near-zero height.
+            .frame(minHeight: 400)
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+        }) {
             VStack(spacing: 12) {
                 if !viewModel.activationError.isEmpty {
                     Text(viewModel.activationError)
+                        .font(.footnote)
                         .multilineTextAlignment(.center)
                         .foregroundStyle(.red)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
+                ProgressIndicatorView(state: viewModel.isActivating ? .indeterminantProgress : .hidden)
+
                 Button(action: { viewModel.activate() }) {
-                    if viewModel.isActivating {
-                        ActivityIndicator()
-                    } else {
-                        Text("Activate Patch", comment: "label for activate patch")
-                    }
+                    Text("Activate Patch", comment: "label for activate patch")
+                        .actionButtonStyle(.primary)
                 }
                 .disabled(viewModel.isActivating)
-                .buttonStyle(ActionButtonStyle())
             }
             .padding()
         }

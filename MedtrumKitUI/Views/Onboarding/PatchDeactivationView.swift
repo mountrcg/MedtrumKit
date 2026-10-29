@@ -8,55 +8,64 @@ struct PatchDeactivationView: View {
     @State private var showingSteps = false
 
     var body: some View {
-        VStack {
-            List {
-                Section {
-                    PumpImage(is300u: viewModel.is300u)
-                    Text(
-                        "When clicking on the button, you will get a Biometrics prompt. Once completed, the patch will be deactivated and you will be prompted to pair a new patch.",
-                        comment: "Instructions for deactivate patch"
+        GuidePage(content: {
+            PatchOverviewContent(assetName: "step_remove_patch") {
+                Text("Deactivate the Patch", comment: "Title of the patch deactivation screen")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+
+                Text(
+                    "When clicking on the button, you will get a Biometrics prompt. Once completed, the patch will be deactivated and you will be prompted to pair a new patch.",
+                    comment: "Instructions for deactivate patch"
+                )
+                .fixedSize(horizontal: false, vertical: true)
+
+                Button(action: { showingSteps = true }) {
+                    Label(
+                        String(
+                            localized: "How to Remove the Patch",
+                            comment: "Title of the step-by-step patch removal guide, and of the button opening it"
+                        ),
+                        systemImage: "questionmark.circle.fill"
                     )
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+            // Floor against the hosting List proposing a GeometryReader-based row a near-zero height.
+            .frame(minHeight: 400)
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+        }) {
+            VStack(spacing: 12) {
+                if !viewModel.deactivationError.isEmpty {
+                    Text(viewModel.deactivationError)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if viewModel.disableButtons {
+                    Text("Cannot deactivate while a bolus is in progress", comment: "Wait for bolus to complete")
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
-                Section {
-                    Button(action: { showingSteps = true }) {
-                        Label(
-                            String(
-                                localized: "How to Remove the Patch",
-                                comment: "Title of the step-by-step patch removal guide, and of the button opening it"
-                            ),
-                            systemImage: "questionmark.circle.fill"
-                        )
-                    }
+                ProgressIndicatorView(state: viewModel.isDeactivating ? .indeterminantProgress : .hidden)
+
+                Button(action: { showingConfirmationPrompt = true }) {
+                    Text("Force remove", comment: "Force remove")
+                        .actionButtonStyle(.secondary)
                 }
-            }
-            Spacer()
+                .disabled(viewModel.isDeactivating)
 
-            if !viewModel.deactivationError.isEmpty {
-                Text(viewModel.deactivationError)
-                    .foregroundStyle(.red)
-            } else if viewModel.disableButtons {
-                Text("Cannot deactivate while a bolus is in progress", comment: "Wait for bolus to complete")
-                    .foregroundStyle(.red)
-            }
-
-            Button(action: { showingConfirmationPrompt = true }) {
-                Text("Force remove", comment: "Force remove")
-            }
-            .buttonStyle(ActionButtonStyle(.secondary))
-            .disabled(viewModel.isDeactivating)
-            .padding([.bottom, .horizontal])
-
-            Button(action: { viewModel.deactivate() }) {
-                if viewModel.isDeactivating {
-                    ActivityIndicator()
-                } else {
+                Button(action: { viewModel.deactivate() }) {
                     Text("Authenticate & deactivate patch", comment: "Authenticate and deactivate label")
+                        .actionButtonStyle(.destructive)
                 }
+                .disabled(viewModel.isDeactivating || viewModel.disableButtons)
             }
-            .buttonStyle(ActionButtonStyle(.destructive))
-            .disabled(viewModel.isDeactivating || viewModel.disableButtons)
-            .padding([.bottom, .horizontal])
+            .padding()
         }
         .alert(String(localized: "Are you sure?", comment: "title force remove"), isPresented: $showingConfirmationPrompt) {
             Button(String(localized: "Confirm", comment: "confirm force remove"), role: .destructive) {
@@ -75,7 +84,5 @@ struct PatchDeactivationView: View {
                 didFinish: { showingSteps = false }
             )
         }
-        .listStyle(InsetGroupedListStyle())
-        .edgesIgnoringSafeArea(.bottom)
     }
 }
