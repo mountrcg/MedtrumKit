@@ -9,7 +9,10 @@ struct PatchActivationView: View {
 
     var body: some View {
         GuidePage(content: {
-            PatchOverviewContent(assetName: "step_insert_needle") {
+            VStack(alignment: .leading, spacing: 20) {
+                PatchStepFigure(assetName: "step_insert_needle")
+                    .frame(height: 200)
+
                 Text("Attach and Activate the Patch", comment: "Title of the patch activation screen")
                     .font(.title2)
                     .fontWeight(.semibold)
@@ -32,11 +35,7 @@ struct PatchActivationView: View {
                 }
                 .buttonStyle(.bordered)
             }
-            // Floor against the hosting List proposing a GeometryReader-based row a near-zero height.
-            .frame(minHeight: 400)
-            .listRowInsets(EdgeInsets())
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
+            .padding(.vertical, 8)
         }) {
             VStack(spacing: 12) {
                 if !viewModel.activationError.isEmpty {

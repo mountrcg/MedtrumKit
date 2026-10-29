@@ -9,7 +9,10 @@ struct PatchDeactivationView: View {
 
     var body: some View {
         GuidePage(content: {
-            PatchOverviewContent(assetName: "step_remove_patch") {
+            VStack(alignment: .leading, spacing: 20) {
+                PatchStepFigure(assetName: "step_remove_patch")
+                    .frame(height: 200)
+
                 Text("Deactivate the Patch", comment: "Title of the patch deactivation screen")
                     .font(.title2)
                     .fontWeight(.semibold)
@@ -32,11 +35,7 @@ struct PatchDeactivationView: View {
                 }
                 .buttonStyle(.bordered)
             }
-            // Floor against the hosting List proposing a GeometryReader-based row a near-zero height.
-            .frame(minHeight: 400)
-            .listRowInsets(EdgeInsets())
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
+            .padding(.vertical, 8)
         }) {
             VStack(spacing: 12) {
                 if !viewModel.deactivationError.isEmpty {

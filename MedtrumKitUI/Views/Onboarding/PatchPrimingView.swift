@@ -8,7 +8,10 @@ struct PatchPrimingView: View {
 
     var body: some View {
         GuidePage(content: {
-            PatchOverviewContent(assetName: "step_fill_patch") {
+            VStack(alignment: .leading, spacing: 20) {
+                PatchStepFigure(assetName: "step_fill_patch")
+                    .frame(height: 200)
+
                 Text("Fill and Prime the Patch", comment: "Title of the patch priming screen")
                     .font(.title2)
                     .fontWeight(.semibold)
@@ -36,11 +39,7 @@ struct PatchPrimingView: View {
                 }
                 .buttonStyle(.bordered)
             }
-            // Floor against the hosting List proposing a GeometryReader-based row a near-zero height.
-            .frame(minHeight: 400)
-            .listRowInsets(EdgeInsets())
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
+            .padding(.vertical, 8)
         }) {
             VStack(spacing: 12) {
                 statusSection
