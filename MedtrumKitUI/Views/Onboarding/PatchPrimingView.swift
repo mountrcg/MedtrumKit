@@ -1,4 +1,5 @@
 import LoopKitUI
+import SlideButton
 import SwiftUI
 
 struct PatchPrimingView: View {
@@ -44,13 +45,20 @@ struct PatchPrimingView: View {
             VStack(spacing: 12) {
                 statusSection
 
-                ProgressIndicatorView(state: progressState)
-
-                Button(action: { viewModel.startPrime() }) {
-                    Text("Start priming", comment: "label for prime start action")
-                        .actionButtonStyle(.primary)
+                if viewModel.isPriming {
+                    ProgressView(progress: viewModel.primeProgress)
+                } else {
+                    SlideButton(action: { viewModel.startPrime() }) {
+                        Text(
+                            String(
+                                localized: "Start priming",
+                                comment: "label for prime start action"
+                            )
+                        )
+                        .font(.headline)
+                    }
+                    .disabled(!viewModel.canStartPriming)
                 }
-                .disabled(!viewModel.canStartPriming)
             }
             .padding()
         }
@@ -65,10 +73,6 @@ struct PatchPrimingView: View {
                 didFinish: { showingSteps = false }
             )
         }
-    }
-
-    private var progressState: ProgressIndicatorState {
-        viewModel.isPriming ? .indeterminantProgress : .hidden
     }
 
     @ViewBuilder private var statusSection: some View {

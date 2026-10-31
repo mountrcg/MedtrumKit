@@ -12,6 +12,7 @@
 		3E98B84C2D6BB12C00DD5123 /* MedtrumKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B7D3A8D02C148CC4002EE003 /* MedtrumKit.framework */; platformFilter = ios; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		B7189AEA2C15A8CE00703DE2 /* LoopKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B7189AE92C15A8CE00703DE2 /* LoopKit.framework */; };
 		B7D3A8DB2C148CC4002EE003 /* MedtrumKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B7D3A8D02C148CC4002EE003 /* MedtrumKit.framework */; };
+		FACADE00123456789ABCDEF2 /* SlideButton in Frameworks */ = {isa = PBXBuildFile; productRef = FACADE00123456789ABCDEF1 /* SlideButton */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -100,6 +101,7 @@
 			files = (
 				3E767D4D2D67BA71004B1971 /* LoopKitUI.framework in Frameworks */,
 				B7189AEA2C15A8CE00703DE2 /* LoopKit.framework in Frameworks */,
+				FACADE00123456789ABCDEF2 /* SlideButton in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -212,6 +214,9 @@
 				3EF5F40B3034EC9800608A97 /* Localization */,
 			);
 			name = MedtrumKit;
+			packageProductDependencies = (
+				FACADE00123456789ABCDEF1 /* SlideButton */,
+			);
 			productName = MedtrumKit;
 			productReference = B7D3A8D02C148CC4002EE003 /* MedtrumKit.framework */;
 			productType = "com.apple.product-type.framework";
@@ -290,6 +295,9 @@
 				vi,
 			);
 			mainGroup = B7D3A8C62C148CC4002EE003;
+			packageReferences = (
+				FACADE00123456789ABCDEF0 /* XCRemoteSwiftPackageReference "SlideButton" */,
+			);
 			productRefGroup = B7D3A8D12C148CC4002EE003 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -742,6 +750,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		FACADE00123456789ABCDEF0 /* XCRemoteSwiftPackageReference "SlideButton" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/no-comment/SlideButton";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FACADE00123456789ABCDEF1 /* SlideButton */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FACADE00123456789ABCDEF0 /* XCRemoteSwiftPackageReference "SlideButton" */;
+			productName = SlideButton;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B7D3A8C72C148CC4002EE003 /* Project object */;
 }
