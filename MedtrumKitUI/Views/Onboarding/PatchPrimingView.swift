@@ -1,4 +1,5 @@
 import LoopKitUI
+import SlideButton
 import SwiftUI
 
 struct PatchPrimingView: View {
@@ -7,8 +8,11 @@ struct PatchPrimingView: View {
     @State private var showingSteps = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            PatchOverviewContent(assetName: "step_fill_patch") {
+        GuidePage(content: {
+            VStack(alignment: .leading, spacing: 20) {
+                PatchStepFigure(assetName: "step_fill_patch")
+                    .frame(height: 200)
+
                 Text("Fill and Prime the Patch", comment: "Title of the patch priming screen")
                     .font(.title2)
                     .fontWeight(.semibold)
@@ -36,23 +40,25 @@ struct PatchPrimingView: View {
                 }
                 .buttonStyle(.bordered)
             }
-
+            .padding(.vertical, 8)
+        }) {
             VStack(spacing: 12) {
                 statusSection
 
                 if viewModel.isPriming {
                     ProgressView(progress: viewModel.primeProgress)
-                }
-
-                Button(action: { viewModel.startPrime() }) {
-                    if viewModel.isPriming {
-                        ActivityIndicator()
-                    } else {
-                        Text("Start priming", comment: "label for prime start action")
+                } else {
+                    SlideButton(action: { viewModel.startPrime() }) {
+                        Text(
+                            String(
+                                localized: "Start priming",
+                                comment: "label for prime start action"
+                            )
+                        )
+                        .font(.headline)
                     }
+                    .disabled(!viewModel.canStartPriming)
                 }
-                .disabled(!viewModel.canStartPriming)
-                .buttonStyle(ActionButtonStyle())
             }
             .padding()
         }
@@ -110,11 +116,6 @@ struct PatchPrimingView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
     }
 }

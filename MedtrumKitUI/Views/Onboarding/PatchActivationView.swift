@@ -8,8 +8,11 @@ struct PatchActivationView: View {
     @State private var showingSteps = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            PatchOverviewContent(assetName: "step_insert_needle") {
+        GuidePage(content: {
+            VStack(alignment: .leading, spacing: 20) {
+                PatchStepFigure(assetName: "step_insert_needle")
+                    .frame(height: 200)
+
                 Text("Attach and Activate the Patch", comment: "Title of the patch activation screen")
                     .font(.title2)
                     .fontWeight(.semibold)
@@ -32,24 +35,24 @@ struct PatchActivationView: View {
                 }
                 .buttonStyle(.bordered)
             }
-
+            .padding(.vertical, 8)
+        }) {
             VStack(spacing: 12) {
                 if !viewModel.activationError.isEmpty {
                     Text(viewModel.activationError)
+                        .font(.footnote)
                         .multilineTextAlignment(.center)
                         .foregroundStyle(.red)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
+                ProgressIndicatorView(state: viewModel.isActivating ? .indeterminantProgress : .hidden)
+
                 Button(action: { viewModel.activate() }) {
-                    if viewModel.isActivating {
-                        ActivityIndicator()
-                    } else {
-                        Text("Activate Patch", comment: "label for activate patch")
-                    }
+                    Text("Activate Patch", comment: "label for activate patch")
+                        .actionButtonStyle(.primary)
                 }
                 .disabled(viewModel.isActivating)
-                .buttonStyle(ActionButtonStyle())
             }
             .padding()
         }

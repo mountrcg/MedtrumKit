@@ -271,54 +271,6 @@ struct PatchStepFigure: View {
     }
 }
 
-/// The scrolling part of an overview screen: a picture above the text.
-///
-/// The text (title, warnings, description) is measured first and the picture
-/// gets the height that is left, between `minImageHeight` and
-/// `maxImageHeight`. On a short phone or with a large text size the picture
-/// shrinks so everything still fits without scrolling; only when even the
-/// smallest picture leaves too little room does the content scroll, and then
-/// what sits right under the picture is the last to go below the fold.
-struct PatchOverviewContent<Content: View>: View {
-    let assetName: String
-    var maxImageHeight: CGFloat = 200
-    var minImageHeight: CGFloat = 80
-    @ViewBuilder let content: Content
-
-    @State private var contentHeight: CGFloat = 0
-
-    private let spacing: CGFloat = 20
-    private let padding: CGFloat = 16
-
-    var body: some View {
-        GeometryReader { proxy in
-            ScrollView {
-                VStack(alignment: .leading, spacing: spacing) {
-                    PatchStepFigure(assetName: assetName)
-                        .frame(height: imageHeight(available: proxy.size.height))
-
-                    VStack(alignment: .leading, spacing: spacing) {
-                        content
-                    }
-                    .onGeometryChange(for: CGFloat.self) { geometry in
-                        geometry.size.height
-                    } action: { height in
-                        contentHeight = height
-                    }
-                }
-                .padding(padding)
-            }
-            .scrollBounceBehavior(.basedOnSize)
-            .scrollIndicatorsFlash(onAppear: true)
-        }
-    }
-
-    private func imageHeight(available: CGFloat) -> CGFloat {
-        let room = available - contentHeight - spacing - 2 * padding
-        return min(maxImageHeight, max(minImageHeight, room))
-    }
-}
-
 /// A note on a step, shown as a tinted callout: orange for things that can go
 /// wrong, grey for helpful tips.
 struct PatchStepNoteView: View {
