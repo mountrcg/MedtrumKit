@@ -1,3 +1,4 @@
+import CoreBluetooth
 import LoopKit
 
 public enum BasalState: Int {
@@ -94,6 +95,9 @@ public class MedtrumPumpState: RawRepresentable {
             pumpState = .none
         }
 
+        // Not kept by earlier versions: then only a patch being set up has no session
+        patchSessionEnded = rawValue["patchSessionEnded"] as? Bool ?? pumpState.isSetup
+
         if let rawBasalSchedule = rawValue["basalSchedule"] as? BasalSchedule.RawValue {
             basalSchedule = BasalSchedule(rawValue: rawBasalSchedule) ??
                 BasalSchedule(entries: [LoopKit.RepeatingScheduleValue(startTime: 0, value: 0)])
@@ -144,6 +148,7 @@ public class MedtrumPumpState: RawRepresentable {
         pumpTime = Date()
         pumpTimeSyncedAt = Date()
         pumpState = .none
+        patchSessionEnded = true
 
         maxHourlyInsulin = 20
         maxDailyInsulin = 100
@@ -184,6 +189,7 @@ public class MedtrumPumpState: RawRepresentable {
         value["pumpTime"] = pumpTime
         value["pumpTimeSyncedAt"] = pumpTimeSyncedAt
         value["pumpState"] = pumpState.rawValue
+        value["patchSessionEnded"] = patchSessionEnded
         value["maxHourlyInsulin"] = maxHourlyInsulin
         value["maxDailyInsulin"] = maxDailyInsulin
         value["basalSchedule"] = basalSchedule.rawValue
@@ -262,6 +268,8 @@ public class MedtrumPumpState: RawRepresentable {
     public var pumpTimeSyncedAt: Date
 
     public var pumpState: PatchState
+    /// No patch session is running: the last one ended, or none started yet
+    public var patchSessionEnded: Bool
     public var initialReservoir: Double?
     public var reservoir: Double
     public var battery: Double
@@ -282,8 +290,12 @@ public class MedtrumPumpState: RawRepresentable {
     // **** THESE VALUES SHOULD NOT BE PERSISTED ****
     public var primeProgress: UInt8 = 0
     public var isConnected: Bool = false
+    /// The first connect to a newly saved base is running. Only drives the status icon.
+    public var isSearchingForBase: Bool = false
     // if it was persisted, and we happen to restore a date - there will be nothing left to reset it to `nil`
     public var cancelingBolusSince: Date?
+    // last state CoreBluetooth reported
+    public var bluetoothState: CBManagerState = .unknown
     // **** END ****
 
     public var bolusDose: UnfinalizedDose?
@@ -401,7 +413,8 @@ public class MedtrumPumpState: RawRepresentable {
             "* insulinType: \(String(describing: insulinType))",
             "* reservoirLevel: \(reservoir)",
             "* lowReservoirWarning: \(String(describing: lowReservoirWarning))",
-            "* bolusState: \(bolusState.rawValue)"
+            "* bolusState: \(bolusState.rawValue)",
+            "* bluetoothState: \(bluetoothState.rawValue)"
         ].joined(separator: "\n")
     }
 }

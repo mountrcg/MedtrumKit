@@ -143,8 +143,13 @@ class PatchPrimingViewModel: ObservableObject {
             }
 
             isConnecting = true
+            Self.setSearchingForBase(true, on: pumpManager)
             pumpManager.bluetooth.ensureConnected { [weak self] error in
                 DispatchQueue.main.async {
+                    // Cleared whatever the outcome - success, failure or timeout - and even when
+                    // the screen is already gone, so the status icon never keeps reaching.
+                    PatchPrimingViewModel.setSearchingForBase(false, on: pumpManager)
+
                     guard let self = self else {
                         return
                     }
@@ -196,6 +201,16 @@ class PatchPrimingViewModel: ObservableObject {
                 // Command send succesfully, now we have to wait till primeProgress has reached PatchState.primed or PatchState.active
             }
         #endif
+    }
+
+    /// The status icon shows this attempt - the first connect once the base is saved and attached.
+    private static func setSearchingForBase(_ isSearching: Bool, on pumpManager: MedtrumPumpManager) {
+        guard pumpManager.state.isSearchingForBase != isSearching else {
+            return
+        }
+
+        pumpManager.state.isSearchingForBase = isSearching
+        pumpManager.notifyStateDidChange()
     }
 
     private func updateState() {

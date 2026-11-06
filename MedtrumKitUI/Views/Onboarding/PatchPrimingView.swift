@@ -1,97 +1,78 @@
 import LoopKitUI
+import SlideButton
 import SwiftUI
 
 struct PatchPrimingView: View {
     @ObservedObject var viewModel: PatchPrimingViewModel
 
+    @State private var showingSteps = false
+
     var body: some View {
-        VStack {
-            List {
-                Section {
-                    supportImage("connect_base")
-                    HStack(alignment: .top) {
-                        Text("1.")
-                            .foregroundStyle(.primary)
-                        Text("Connect your pump base to the patch.", comment: "Label for prime step 2.1")
-                            .foregroundStyle(.primary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
+        GuidePage(content: {
+            VStack(alignment: .leading, spacing: 20) {
+                PatchStepFigure(assetName: "step_fill_patch")
+                    .frame(height: 200)
 
-                Section {
-                    supportImage("fill_reservoir")
-                    VStack(alignment: .leading) {
-                        HStack(alignment: .top) {
-                            Text("2.")
-                                .foregroundStyle(.primary)
-                            Text("Fill the syringe with insulin", comment: "Label for prime step 2.2")
-                                .foregroundStyle(.primary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        HStack(alignment: .top) {
-                            Text("3.")
-                                .foregroundStyle(.primary)
-                            Text(
-                                "Place the syringe in the patch and pull out 1 to 2 dashes of air.",
-                                comment: "Label for prime step 2.3"
-                            )
-                            .foregroundStyle(.primary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        HStack(alignment: .top) {
-                            Text("4.")
-                                .foregroundStyle(.primary)
-                            Text(
-                                "Fill the patch with insulin. NOTE: A minimum of 70U is required for activation.",
-                                comment: "Label for prime step 2.4"
-                            )
-                            .foregroundStyle(.primary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-                }
+                Text("Fill and Prime the Patch", comment: "Title of the patch priming screen")
+                    .font(.title2)
+                    .fontWeight(.semibold)
 
-                Section {
-                    supportImage("half_press_needle_button")
-                    HStack(alignment: .top) {
-                        Text("5.")
-                            .foregroundStyle(.primary)
-                        Text(
-                            "Press the needle button and start the priming process.",
-                            comment: "Label for pressing needle button step 2.5"
-                        )
-                        .foregroundStyle(.primary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
+                PatchKeyPoints(notes: [
+                    PatchInstructionSteps.minimumFillNote,
+                    PatchInstructionSteps.notOnBodyNote
+                ])
+
+                Text(
+                    "Connect your pump base to a new patch and fill the patch with insulin. Then press the needle button and start priming.",
+                    comment: "Patch priming screen: overview of the steps"
+                )
+                .fixedSize(horizontal: false, vertical: true)
+
+                Button(action: { showingSteps = true }) {
+                    Label(
+                        String(
+                            localized: "How to Fill and Prime the Patch",
+                            comment: "Title of the step-by-step priming guide, and of the button opening it"
+                        ),
+                        systemImage: "questionmark.circle.fill"
+                    )
+                    .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.bordered)
             }
-            Spacer()
+            .padding(.vertical, 8)
+        }) {
+            VStack(spacing: 12) {
+                statusSection
 
-            statusSection
-
-            if !viewModel.isPriming {
-                Text("Do not attach the patch to the body yet", comment: "Label for warning priming")
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.red)
-            } else {
-                ProgressView(progress: viewModel.primeProgress)
-                    .padding(.horizontal)
-            }
-
-            Button(action: { viewModel.startPrime() }) {
                 if viewModel.isPriming {
-                    ActivityIndicator()
+                    ProgressView(progress: viewModel.primeProgress)
                 } else {
-                    Text("Start priming", comment: "label for prime start action")
+                    SlideButton(action: { viewModel.startPrime() }) {
+                        Text(
+                            String(
+                                localized: "Start priming",
+                                comment: "label for prime start action"
+                            )
+                        )
+                        .font(.headline)
+                    }
+                    .disabled(!viewModel.canStartPriming)
                 }
             }
-            .disabled(!viewModel.canStartPriming)
-            .buttonStyle(ActionButtonStyle())
-            .padding([.bottom, .horizontal])
+            .padding()
         }
         .onAppear { viewModel.connect() }
-        .listStyle(InsetGroupedListStyle())
-        .edgesIgnoringSafeArea(.bottom)
+        .sheet(isPresented: $showingSteps) {
+            PatchStepsPagerView(
+                title: String(
+                    localized: "How to Fill and Prime the Patch",
+                    comment: "Title of the step-by-step priming guide, and of the button opening it"
+                ),
+                steps: PatchInstructionSteps.priming,
+                didFinish: { showingSteps = false }
+            )
+        }
     }
 
     @ViewBuilder private var statusSection: some View {
@@ -135,24 +116,6 @@ struct PatchPrimingView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
-        .padding(.horizontal)
-    }
-
-    @ViewBuilder func supportImage(_ imageName: String) -> some View {
-        HStack {
-            Spacer()
-            Image(uiImage: UIImage(named: imageName, in: Bundle(for: MedtrumKitHUDProvider.self), compatibleWith: nil)!)
-                .resizable()
-                .scaledToFit()
-                .padding(.horizontal)
-                .frame(height: 100)
-            Spacer()
-        }
     }
 }
