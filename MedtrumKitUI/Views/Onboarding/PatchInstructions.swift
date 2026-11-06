@@ -16,9 +16,7 @@ struct PatchInstructionStep: Identifiable {
     let notes: [Note]
 }
 
-/// The walkthroughs, in the order the patch is handled: fill and prime it
-/// while it is off the body, then attach it and insert the needle, and at the
-/// end of its life, remove it. They follow Medtrum's Nano quick start guide.
+/// The patch walkthroughs in handling order (prime, attach, remove), following Medtrum's Nano quick start guide.
 enum PatchInstructionSteps {
     private struct Draft {
         let section: String
@@ -253,9 +251,7 @@ enum PatchInstructionSteps {
     }
 }
 
-/// A walkthrough figure. The artwork has an opaque background, so it is shown
-/// at its own proportions on a rounded card, which reads well in dark mode too.
-/// Callers decide how tall it may be.
+/// A walkthrough figure on a rounded card, since the artwork's opaque background must read in dark mode too.
 struct PatchStepFigure: View {
     let assetName: String
 

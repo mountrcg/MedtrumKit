@@ -927,10 +927,8 @@ public extension MedtrumPumpManager {
 
         var events: [NewPumpEvent] = []
         if !state.patchSessionEnded {
-            // The previous patch was replaced without deactivating it - it fell off, or was swapped outside the app. When it
-            // stopped is unknown, so it is taken to have delivered until `start`: a temp basal or a bolus in flight ends
-            // there, and the schedule runs from there. No suspend: a host can take one with a resume at the same time as
-            // never ending.
+            // Old patch was never deactivated and its stop time is unknown: end its delivery at `start`.
+            // No suspend here - a host can read a suspend with a simultaneous resume as never ending.
             log.warning("Previous patch session was not ended, ending its delivery at activation")
             events.append(contentsOf: finalizedTempBasal(endedAt: start))
             events.append(contentsOf: finalizeInterruptedBolus())
@@ -994,11 +992,8 @@ public extension MedtrumPumpManager {
             )
         }
 
-        // Suspended already - by the patch halting, or by a suspend - its suspend was reported then. A second, later one
-        // would have a host that keeps only the last count the time between the two as delivered. That holds only while
-        // the patch can't have resumed: a suspend can end on its own, unseen while out of range, so it takes a state the
-        // patch never leaves, one it never delivered in or no longer does, or a current one that shows it not delivering.
-        // Otherwise the suspend is reported now.
+        // A still-holding suspend was reported already; a second one makes last-suspend-only hosts count the gap as delivered.
+        // A suspend can end unseen out of range, so unless the patch provably is not delivering, report the suspend now.
         let hasStopped = state.basalDose.type == .suspend &&
             (state.pumpState.isTerminated || state.pumpState.isSetup || (statusIsCurrent && !state.pumpState.isDelivering))
         let events = hasStopped ? finalizeInterruptedBolus() : stoppedDelivery(at: stoppedAt)

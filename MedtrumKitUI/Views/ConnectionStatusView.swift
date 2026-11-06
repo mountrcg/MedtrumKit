@@ -28,13 +28,38 @@ enum MedtrumConnectionStatus: Equatable {
         }
     }
 
-    /// CoreBluetooth is stuck where only a relaunch helps - `.unsupported` never reports again.
+    /// Only `.unsupported` needs a relaunch: CoreBluetooth never reports again on this manager.
     var needsAppRestart: Bool {
         guard case let .bluetoothUnavailable(state) = self else {
             return false
         }
 
-        return state != .poweredOff && state != .unauthorized
+        return MedtrumBluetoothUnavailableKind.kind(for: state) == .restartApp
+    }
+}
+
+/// What the user should do about an unusable Bluetooth state; unrecognized states never advise a restart.
+enum MedtrumBluetoothUnavailableKind: Equatable {
+    case bluetoothOff
+    case allowBluetooth
+    case restartApp
+    case unavailable
+
+    static func kind(for state: CBManagerState) -> MedtrumBluetoothUnavailableKind {
+        switch state {
+        case .poweredOff:
+            return .bluetoothOff
+        case .unauthorized:
+            return .allowBluetooth
+        case .unsupported:
+            return .restartApp
+        case .resetting,
+             .unknown,
+             .poweredOn:
+            return .unavailable
+        @unknown default:
+            return .unavailable
+        }
     }
 }
 
@@ -137,14 +162,15 @@ enum MedtrumConnectionStatusLabel {
         case .disconnected:
             return Text("Disconnected", comment: "label for disconnected")
         case let .bluetoothUnavailable(state):
-            switch state {
-            case .poweredOff:
+            switch MedtrumBluetoothUnavailableKind.kind(for: state) {
+            case .bluetoothOff:
                 return Text("Bluetooth off", comment: "label for bluetooth powered off")
-            case .unauthorized:
+            case .allowBluetooth:
                 return Text("Allow Bluetooth", comment: "label for bluetooth unauthorized")
-            default:
-                // .unsupported is terminal: CoreBluetooth never reports again on this manager.
+            case .restartApp:
                 return Text("Restart app", comment: "label for bluetooth unusable")
+            case .unavailable:
+                return Text("Bluetooth unavailable", comment: "label for bluetooth temporarily unavailable")
             }
         }
     }

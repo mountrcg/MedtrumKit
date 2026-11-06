@@ -704,7 +704,6 @@ struct MedtrumKitSettings: View {
     }
 
     var connectionStatusIcon: some View {
-        // Same antenna the navigation bar shows.
         ConnectionStatusIcon(status: connectionStatus, size: 20)
     }
 
